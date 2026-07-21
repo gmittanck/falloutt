@@ -13,13 +13,7 @@ function desenharSpriteInimigo(canvasId, tipo) {
     // Configurações de pixel art
     ctx.imageSmoothingEnabled = false;
     
-    // Função auxiliar para desenhar pixels
-    function drawPixel(x, y, color, size = 2) {
-        ctx.fillStyle = color;
-        ctx.fillRect(x, y, size, size);
-    }
-    
-    // Função auxiliar para desenhar bloco de pixels
+    // Função auxiliar para desenhar blocos
     function drawBlock(x, y, w, h, color) {
         ctx.fillStyle = color;
         ctx.fillRect(x, y, w, h);
@@ -28,32 +22,19 @@ function desenharSpriteInimigo(canvasId, tipo) {
     switch(tipo) {
         case 'ghoul':
             // Ghoul Radiax - Criatura radioativa e deformada
-            // Corpo
             drawBlock(cx-20, cy-10, 40, 50, '#6b8e4e');
             drawBlock(cx-18, cy-8, 36, 46, '#7a9e5c');
-            
-            // Cabeça deformada
             drawBlock(cx-12, cy-30, 24, 22, '#8b7355');
             drawBlock(cx-10, cy-28, 20, 18, '#9b8365');
-            
-            // Olhos brilhantes (radioativos)
             drawBlock(cx-8, cy-22, 6, 5, '#39ff14');
             drawBlock(cx+2, cy-22, 6, 5, '#39ff14');
             drawBlock(cx-7, cy-21, 4, 3, '#ffffff');
             drawBlock(cx+3, cy-21, 4, 3, '#ffffff');
-            
-            // Boca deformada
             drawBlock(cx-6, cy-14, 12, 4, '#4a3728');
-            
-            // Braços magros
             drawBlock(cx-22, cy-5, 6, 25, '#7a9e5c');
             drawBlock(cx+16, cy-5, 6, 25, '#7a9e5c');
-            
-            // Mãos com garras
             drawBlock(cx-24, cy+20, 8, 6, '#6b8e4e');
             drawBlock(cx+16, cy+20, 8, 6, '#6b8e4e');
-            
-            // Pernas
             drawBlock(cx-12, cy+40, 10, 20, '#7a9e5c');
             drawBlock(cx+2, cy+40, 10, 20, '#7a9e5c');
             
@@ -67,67 +48,46 @@ function desenharSpriteInimigo(canvasId, tipo) {
             break;
             
         case 'raider':
-            // Saqueador do Wasteland - Humano hostil
-            // Corpo com armadura improvisada
+            // Saqueador do Wasteland
             drawBlock(cx-18, cy-15, 36, 45, '#5c4033');
             drawBlock(cx-16, cy-13, 32, 41, '#6b4b3e');
-            
-            // Cabeça com capacete
             drawBlock(cx-10, cy-30, 20, 18, '#4a4a4a');
             drawBlock(cx-8, cy-28, 16, 14, '#5a5a5a');
-            
-            // Visor do capacete
             drawBlock(cx-6, cy-24, 12, 4, '#ff6600');
-            
-            // Olhos
             drawBlock(cx-7, cy-26, 4, 3, '#ffffff');
             drawBlock(cx+3, cy-26, 4, 3, '#000000');
-            
-            // Braços musculosos
             drawBlock(cx-22, cy-10, 8, 30, '#6b4b3e');
             drawBlock(cx+14, cy-10, 8, 30, '#6b4b3e');
-            
-            // Arma improvisada na mão direita
             drawBlock(cx+18, cy+10, 15, 4, '#808080');
             drawBlock(cx+20, cy+14, 4, 8, '#808080');
             drawBlock(cx+22, cy+8, 8, 6, '#696969');
-            
-            // Pernas
             drawBlock(cx-10, cy+30, 8, 25, '#4a3728');
             drawBlock(cx+2, cy+30, 8, 25, '#4a3728');
-            
-            // Botas
             drawBlock(cx-12, cy+52, 12, 6, '#2c1810');
             drawBlock(cx+0, cy+52, 12, 6, '#2c1810');
             break;
             
         case 'scorpion':
             // Radscorpion Gigante
-            // Carapaça
             drawBlock(cx-25, cy-15, 50, 30, '#8b4513');
             drawBlock(cx-23, cy-13, 46, 26, '#a0522d');
             
-            // Detalhes da carapaça (segmentos)
+            // Segmentos da carapaça
             for(let i = 0; i < 4; i++) {
                 drawBlock(cx-20 + i*10, cy-10, 6, 20, '#cd853f');
             }
             
-            // Cabeça
             drawBlock(cx-30, cy-12, 12, 16, '#a0522d');
             drawBlock(cx-32, cy-10, 8, 12, '#8b4513');
-            
-            // Olhos múltiplos
             drawBlock(cx-28, cy-8, 3, 3, '#ff0000');
             drawBlock(cx-24, cy-8, 3, 3, '#ff0000');
             drawBlock(cx-26, cy-6, 4, 4, '#ff4444');
-            
-            // Pinças
             drawBlock(cx-38, cy-18, 12, 8, '#cd853f');
             drawBlock(cx-40, cy-20, 8, 6, '#a0522d');
             drawBlock(cx-38, cy-14, 10, 5, '#cd853f');
             drawBlock(cx-40, cy-12, 8, 4, '#a0522d');
             
-            // Cauda curva com ferrão
+            // Cauda curva
             ctx.beginPath();
             ctx.strokeStyle = '#cd853f';
             ctx.lineWidth = 6;
@@ -135,11 +95,10 @@ function desenharSpriteInimigo(canvasId, tipo) {
             ctx.quadraticCurveTo(cx+35, cy-30, cx+40, cy-20);
             ctx.stroke();
             
-            // Ferrão venenoso
             drawBlock(cx+38, cy-24, 8, 8, '#ff4500');
             drawBlock(cx+40, cy-26, 4, 6, '#ff0000');
             
-            // Pernas segmentadas
+            // Pernas
             for(let i = 0; i < 6; i++) {
                 const offsetX = -20 + i * 8;
                 drawBlock(cx+offsetX, cy+15, 3, 20, '#cd853f');
@@ -148,79 +107,45 @@ function desenharSpriteInimigo(canvasId, tipo) {
             break;
             
         case 'mercenary':
-            // Mercenário da Garra - Soldado profissional
-            // Corpo com armadura tática
+            // Mercenário da Garra
             drawBlock(cx-20, cy-20, 40, 50, '#2c3e50');
             drawBlock(cx-18, cy-18, 36, 46, '#34495e');
-            
-            // Colete tático
             drawBlock(cx-16, cy-15, 32, 40, '#4a6741');
-            
-            // Cabeça com capacete avançado
             drawBlock(cx-12, cy-35, 24, 20, '#2c3e50');
             drawBlock(cx-10, cy-33, 20, 16, '#34495e');
-            
-            // Visor tecnológico
             drawBlock(cx-8, cy-28, 16, 5, '#00ffff');
             drawBlock(cx-6, cy-27, 12, 3, '#00ddff');
-            
-            // Braços com proteção
             drawBlock(cx-24, cy-15, 8, 35, '#34495e');
             drawBlock(cx+16, cy-15, 8, 35, '#34495e');
-            
-            // Rifle de assalto
             drawBlock(cx+20, cy-5, 25, 5, '#2c3e50');
             drawBlock(cx+25, cy-10, 4, 10, '#34495e');
             drawBlock(cx+20, cy-3, 18, 3, '#1a252f');
-            
-            // Pernas com joelheiras
             drawBlock(cx-12, cy+28, 10, 30, '#2c3e50');
             drawBlock(cx+2, cy+28, 10, 30, '#2c3e50');
-            
-            // Coturnos militares
             drawBlock(cx-14, cy+55, 14, 8, '#1a252f');
             drawBlock(cx+0, cy+55, 14, 8, '#1a252f');
-            
-            // Cinto com equipamento
             drawBlock(cx-16, cy+20, 32, 4, '#7f8c8d');
             break;
             
         case 'hound':
             // Cão Mutante Congelado
-            // Corpo canino robusto
             drawBlock(cx-22, cy-8, 44, 28, '#8fbc8f');
             drawBlock(cx-20, cy-6, 40, 24, '#a8d8a8');
-            
-            // Manchas de gelo no corpo
             drawBlock(cx-15, cy-4, 8, 12, '#b0e0e6');
             drawBlock(cx+5, cy-2, 10, 8, '#b0e0e6');
-            
-            // Cabeça de lobo mutante
             drawBlock(cx-28, cy-18, 20, 20, '#8fbc8f');
             drawBlock(cx-26, cy-16, 16, 16, '#a8d8a8');
-            
-            // Olhos congelantes
             drawBlock(cx-22, cy-12, 5, 5, '#00ffff');
             drawBlock(cx-15, cy-12, 5, 5, '#00ffff');
             drawBlock(cx-21, cy-11, 3, 3, '#ffffff');
             drawBlock(cx-14, cy-11, 3, 3, '#ffffff');
-            
-            // Focinho
             drawBlock(cx-30, cy-10, 8, 8, '#778899');
-            
-            // Orelhas pontudas
             drawBlock(cx-22, cy-24, 6, 8, '#8fbc8f');
             drawBlock(cx-14, cy-24, 6, 8, '#8fbc8f');
-            
-            // Patas dianteiras
             drawBlock(cx-18, cy+18, 8, 20, '#8fbc8f');
             drawBlock(cx+6, cy+18, 8, 20, '#8fbc8f');
-            
-            // Patas traseiras
             drawBlock(cx-14, cy+36, 10, 15, '#a8d8a8');
             drawBlock(cx+4, cy+36, 10, 15, '#a8d8a8');
-            
-            // Cauda peluda
             drawBlock(cx+24, cy-4, 12, 6, '#8fbc8f');
             drawBlock(cx+26, cy-6, 8, 4, '#a8d8a8');
             
@@ -234,84 +159,57 @@ function desenharSpriteInimigo(canvasId, tipo) {
             break;
             
         case 'robot':
-            // Protectoron de Gelo - Robô avançado
-            // Corpo principal
+            // Protectoron de Gelo
             drawBlock(cx-20, cy-20, 40, 45, '#808080');
             drawBlock(cx-18, cy-18, 36, 41, '#a8a8a8');
-            
-            // Placa de blindagem
             drawBlock(cx-16, cy-15, 32, 35, '#696969');
-            
-            // Cabeça robótica
             drawBlock(cx-10, cy-30, 20, 15, '#808080');
             drawBlock(cx-8, cy-28, 16, 11, '#a8a8a8');
-            
-            // Olhos LED
             drawBlock(cx-6, cy-24, 4, 4, '#00ffff');
             drawBlock(cx+2, cy-24, 4, 4, '#00ffff');
             drawBlock(cx-5, cy-23, 2, 2, '#ffffff');
             drawBlock(cx+3, cy-23, 2, 2, '#ffffff');
-            
-            // Antena
             drawBlock(cx-1, cy-35, 3, 8, '#c0c0c0');
             drawBlock(cx-1, cy-38, 5, 5, '#ff0000');
-            
-            // Braços mecânicos
             drawBlock(cx-24, cy-10, 8, 30, '#808080');
             drawBlock(cx+16, cy-10, 8, 30, '#808080');
-            
-            // Canhão de gelo no braço direito
             drawBlock(cx+20, cy-5, 12, 8, '#a8a8a8');
             drawBlock(cx+22, cy-7, 8, 4, '#00bfff');
-            
-            // Escudo no braço esquerdo
             drawBlock(cx-28, cy-8, 8, 16, '#87ceeb');
             drawBlock(cx-26, cy-6, 4, 12, '#b0e0e6');
-            
-            // Pernas hidráulicas
             drawBlock(cx-12, cy+25, 10, 25, '#696969');
             drawBlock(cx+2, cy+25, 10, 25, '#696969');
-            
-            // Pés estabilizadores
             drawBlock(cx-14, cy+48, 14, 6, '#808080');
             drawBlock(cx+0, cy+48, 14, 6, '#808080');
             
-            // Partículas de gelo
-            for(let i = 0; i < 5; i++) {
+            // Partículas de gelo animadas
+            for(let i = 0; i < 3; i++) {
                 const angle = (Date.now() / 1000 + i) * 2;
                 const radius = 25 + i * 5;
                 const px = cx + Math.cos(angle) * radius;
                 const py = cy + Math.sin(angle) * radius;
                 ctx.fillStyle = '#00ffff';
-                ctx.globalAlpha = 0.3 + Math.sin(angle) * 0.2;
-                drawBlock(px, py, 3, 3, '#00ffff');
+                ctx.globalAlpha = 0.3;
+                ctx.fillRect(px, py, 3, 3);
             }
             ctx.globalAlpha = 1;
             break;
             
         case 'leech':
             // Sanguessuga de Magma
-            // Corpo alongado
             drawBlock(cx-15, cy-25, 30, 50, '#8b0000');
             drawBlock(cx-13, cy-23, 26, 46, '#a52a2a');
-            
-            // Veias de magma
             drawBlock(cx-10, cy-20, 6, 40, '#ff4500');
             drawBlock(cx+4, cy-15, 4, 35, '#ff4500');
-            
-            // Cabeça sugadora
             drawBlock(cx-18, cy-35, 36, 18, '#b22222');
             drawBlock(cx-16, cy-33, 32, 14, '#dc143c');
-            
-            // Boca circular
             drawBlock(cx-10, cy-28, 20, 10, '#8b0000');
             
-            // Dentes afiados
+            // Dentes
             for(let i = -8; i <= 6; i += 4) {
                 drawBlock(cx+i, cy-26, 3, 5, '#ffffff');
             }
             
-            // Olhos nas laterais
             drawBlock(cx-16, cy-30, 4, 6, '#ff6600');
             drawBlock(cx+12, cy-30, 4, 6, '#ff6600');
             
@@ -331,48 +229,27 @@ function desenharSpriteInimigo(canvasId, tipo) {
             break;
             
         case 'sentry':
-            // Sentry Bot de Destruição - Robô gigante
-            // Corpo massivo
+            // Sentry Bot de Destruição
             drawBlock(cx-30, cy-25, 60, 55, '#4a4a4a');
             drawBlock(cx-28, cy-23, 56, 51, '#5a5a5a');
-            
-            // Núcleo de energia
             drawBlock(cx-10, cy-10, 20, 25, '#ff4500');
             drawBlock(cx-8, cy-8, 16, 21, '#ff6600');
             drawBlock(cx-6, cy-6, 12, 17, '#ff8800');
-            
-            // Cabeça com sensores
             drawBlock(cx-12, cy-35, 24, 15, '#4a4a4a');
-            
-            // Olho principal (laser)
             drawBlock(cx-4, cy-30, 8, 8, '#ff0000');
             drawBlock(cx-2, cy-28, 4, 4, '#ffffff');
-            
-            // Sensores secundários
             drawBlock(cx-12, cy-32, 3, 3, '#00ff00');
             drawBlock(cx+9, cy-32, 3, 3, '#00ff00');
-            
-            // Braços com metralhadoras
             drawBlock(cx-38, cy-20, 12, 40, '#4a4a4a');
             drawBlock(cx+26, cy-20, 12, 40, '#4a4a4a');
-            
-            // Metralhadoras
             drawBlock(cx-40, cy-18, 16, 6, '#696969');
             drawBlock(cx+24, cy-18, 16, 6, '#696969');
-            
-            // Canos das armas
             drawBlock(cx-42, cy-17, 4, 4, '#808080');
             drawBlock(cx+38, cy-17, 4, 4, '#808080');
-            
-            // Lança-mísseis nos ombros
             drawBlock(cx-28, cy-28, 8, 8, '#696969');
             drawBlock(cx+20, cy-28, 8, 8, '#696969');
-            
-            // Pernas de tanque
             drawBlock(cx-20, cy+28, 15, 20, '#4a4a4a');
             drawBlock(cx+5, cy+28, 15, 20, '#4a4a4a');
-            
-            // Esteiras
             drawBlock(cx-22, cy+45, 19, 8, '#696969');
             drawBlock(cx+3, cy+45, 19, 8, '#696969');
             
@@ -384,52 +261,33 @@ function desenharSpriteInimigo(canvasId, tipo) {
             break;
             
         case 'behemoth':
-            // Super Mutante Behemoth - Boss colossal
-            // Corpo gigantesco
+            // Super Mutante Behemoth
             drawBlock(cx-35, cy-30, 70, 80, '#4a6741');
             drawBlock(cx-33, cy-28, 66, 76, '#5a7b51');
-            
-            // Músculos definidos
             drawBlock(cx-25, cy-20, 15, 30, '#3d5a35');
             drawBlock(cx+10, cy-20, 15, 30, '#3d5a35');
-            
-            // Cabeça mutante
             drawBlock(cx-20, cy-50, 40, 28, '#4a6741');
             drawBlock(cx-18, cy-48, 36, 24, '#5a7b51');
-            
-            // Olhos furiosos
             drawBlock(cx-12, cy-40, 10, 8, '#ff0000');
             drawBlock(cx+2, cy-40, 10, 8, '#ff0000');
             drawBlock(cx-10, cy-38, 6, 4, '#ffff00');
             drawBlock(cx+4, cy-38, 6, 4, '#ffff00');
-            
-            // Boca com presas
             drawBlock(cx-10, cy-30, 20, 10, '#2c1810');
+            
             for(let i = -6; i <= 4; i += 3) {
                 drawBlock(cx+i, cy-28, 3, 5, '#ffffff');
             }
             
-            // Braços monstruosos
             drawBlock(cx-40, cy-15, 15, 50, '#5a7b51');
             drawBlock(cx+25, cy-15, 15, 50, '#5a7b51');
-            
-            // Punhos enormes
             drawBlock(cx-42, cy+35, 20, 15, '#3d5a35');
             drawBlock(cx+22, cy+35, 20, 15, '#3d5a35');
-            
-            // Arma improvisada (poste)
             drawBlock(cx+30, cy-5, 8, 60, '#808080');
             drawBlock(cx+32, cy-8, 4, 65, '#a8a8a8');
-            
-            // Pernas de gigante
             drawBlock(cx-15, cy+50, 12, 30, '#5a7b51');
             drawBlock(cx+3, cy+50, 12, 30, '#5a7b51');
-            
-            // Pés
             drawBlock(cx-18, cy+78, 18, 8, '#3d5a35');
             drawBlock(cx+0, cy+78, 18, 8, '#3d5a35');
-            
-            // Coroa de boss
             drawBlock(cx-25, cy-58, 50, 10, '#ffd700');
             drawBlock(cx-20, cy-62, 40, 6, '#ffed4a');
             
@@ -443,34 +301,28 @@ function desenharSpriteInimigo(canvasId, tipo) {
             break;
             
         case 'deathclaw':
-            // Deathclaw Alfa Ancião - Boss lendário
-            // Corpo reptiliano
+            // Deathclaw Alfa Ancião
             drawBlock(cx-30, cy-15, 60, 50, '#8b4513');
             drawBlock(cx-28, cy-13, 56, 46, '#a0522d');
             
-            // Escamas detalhadas
             for(let i = 0; i < 5; i++) {
                 drawBlock(cx-20 + i*8, cy-5, 6, 8, '#6b3410');
                 drawBlock(cx-20 + i*8, cy+10, 6, 8, '#6b3410');
             }
             
-            // Cabeça de dragão mutante
             drawBlock(cx-25, cy-35, 35, 25, '#a0522d');
             drawBlock(cx-23, cy-33, 31, 21, '#b5653b');
-            
-            // Olhos demoníacos
             drawBlock(cx-15, cy-28, 8, 8, '#ff0000');
             drawBlock(cx+2, cy-28, 8, 8, '#ff0000');
             drawBlock(cx-13, cy-26, 4, 4, '#ffff00');
             drawBlock(cx+4, cy-26, 4, 4, '#ffff00');
-            
-            // Mandíbula com presas
             drawBlock(cx-20, cy-18, 25, 8, '#8b4513');
+            
             for(let i = -16; i <= 8; i += 5) {
                 drawBlock(cx+i, cy-16, 3, 8, '#ffffff');
             }
             
-            // Chifres curvos
+            // Chifres
             ctx.beginPath();
             ctx.strokeStyle = '#6b3410';
             ctx.lineWidth = 6;
@@ -480,25 +332,20 @@ function desenharSpriteInimigo(canvasId, tipo) {
             ctx.lineTo(cx+18, cy-42);
             ctx.stroke();
             
-            // Braços com garras mortais
             drawBlock(cx-38, cy-10, 12, 35, '#a0522d');
             drawBlock(cx+26, cy-10, 12, 35, '#a0522d');
             
-            // Garras gigantes
             for(let i = 0; i < 3; i++) {
                 drawBlock(cx-42 + i*3, cy+25, 3, 15, '#2c1810');
                 drawBlock(cx+30 + i*3, cy+25, 3, 15, '#2c1810');
             }
             
-            // Pernas poderosas
             drawBlock(cx-15, cy+35, 14, 30, '#a0522d');
             drawBlock(cx+1, cy+35, 14, 30, '#a0522d');
-            
-            // Pés com garras
             drawBlock(cx-18, cy+63, 20, 6, '#6b3410');
             drawBlock(cx-2, cy+63, 20, 6, '#6b3410');
             
-            // Cauda longa
+            // Cauda
             ctx.beginPath();
             ctx.strokeStyle = '#a0522d';
             ctx.lineWidth = 8;
@@ -506,16 +353,13 @@ function desenharSpriteInimigo(canvasId, tipo) {
             ctx.quadraticCurveTo(cx+45, cy+30, cx+50, cy+50);
             ctx.stroke();
             
-            // Espinhos na cauda
             for(let i = 0; i < 4; i++) {
                 drawBlock(cx+35 + i*4, cy+20 + i*8, 4, 4, '#6b3410');
             }
             
-            // Coroa de alfa
             drawBlock(cx-20, cy-42, 30, 8, '#ffd700');
             drawBlock(cx-15, cy-46, 20, 5, '#ffed4a');
             
-            // Aura de terror
             ctx.fillStyle = '#ff0000';
             ctx.globalAlpha = 0.15;
             ctx.beginPath();
@@ -525,62 +369,42 @@ function desenharSpriteInimigo(canvasId, tipo) {
             break;
             
         case 'yeti':
-            // Yeti de Fusão Nuclear - Boss do gelo
-            // Corpo peludo e massivo
+            // Yeti de Fusão Nuclear
             drawBlock(cx-35, cy-30, 70, 80, '#e0ffff');
             drawBlock(cx-33, cy-28, 66, 76, '#f0ffff');
             
-            // Pelo detalhado
             for(let i = 0; i < 10; i++) {
                 drawBlock(cx-30 + i*6, cy-20, 3, 40, '#b0e0e6');
             }
             
-            // Cabeça de primata mutante
             drawBlock(cx-22, cy-50, 44, 30, '#e0ffff');
             drawBlock(cx-20, cy-48, 40, 26, '#f0ffff');
-            
-            // Olhos congelantes
             drawBlock(cx-12, cy-38, 10, 10, '#00ffff');
             drawBlock(cx+2, cy-38, 10, 10, '#00ffff');
             drawBlock(cx-10, cy-36, 6, 6, '#ffffff');
             drawBlock(cx+4, cy-36, 6, 6, '#ffffff');
-            
-            // Boca com presas de gelo
             drawBlock(cx-10, cy-30, 20, 8, '#87ceeb');
+            
             for(let i = -6; i <= 4; i += 3) {
                 drawBlock(cx+i, cy-28, 3, 5, '#ffffff');
             }
             
-            // Braços gigantes
             drawBlock(cx-42, cy-15, 16, 50, '#f0ffff');
             drawBlock(cx+26, cy-15, 16, 50, '#f0ffff');
-            
-            // Punhos de gelo
             drawBlock(cx-44, cy+35, 22, 18, '#b0e0e6');
             drawBlock(cx+22, cy+35, 22, 18, '#b0e0e6');
-            
-            // Cristais de gelo nos punhos
             drawBlock(cx-40, cy+30, 6, 8, '#00ffff');
             drawBlock(cx+34, cy+30, 6, 8, '#00ffff');
-            
-            // Pernas
             drawBlock(cx-18, cy+50, 14, 35, '#f0ffff');
             drawBlock(cx+4, cy+50, 14, 35, '#f0ffff');
-            
-            // Pés
             drawBlock(cx-20, cy+83, 18, 8, '#b0e0e6');
             drawBlock(cx+2, cy+83, 18, 8, '#b0e0e6');
-            
-            // Núcleo nuclear no peito
             drawBlock(cx-8, cy-8, 16, 20, '#ff4500');
             drawBlock(cx-6, cy-6, 12, 16, '#ff6600');
             drawBlock(cx-4, cy-4, 8, 12, '#ffff00');
-            
-            // Coroa de gelo
             drawBlock(cx-22, cy-58, 44, 10, '#00ffff');
             drawBlock(cx-18, cy-62, 36, 6, '#e0ffff');
             
-            // Aurora boreal
             ctx.fillStyle = '#00ffff';
             ctx.globalAlpha = 0.1;
             ctx.beginPath();
@@ -590,12 +414,11 @@ function desenharSpriteInimigo(canvasId, tipo) {
             break;
             
         case 'demon':
-            // Arquidemônio de Radiação - Boss final
-            // Corpo demoníaco flamejante
+            // Arquidemônio de Radiação
             drawBlock(cx-30, cy-25, 60, 65, '#8b0000');
             drawBlock(cx-28, cy-23, 56, 61, '#b22222');
             
-            // Asas de radiação
+            // Asas
             ctx.beginPath();
             ctx.fillStyle = '#ff4500';
             ctx.globalAlpha = 0.6;
@@ -615,17 +438,14 @@ function desenharSpriteInimigo(canvasId, tipo) {
             ctx.fill();
             ctx.globalAlpha = 1;
             
-            // Cabeça demoníaca
             drawBlock(cx-20, cy-45, 40, 30, '#b22222');
             drawBlock(cx-18, cy-43, 36, 26, '#dc143c');
-            
-            // Olhos de fogo
             drawBlock(cx-12, cy-35, 10, 8, '#ff0000');
             drawBlock(cx+2, cy-35, 10, 8, '#ff0000');
             drawBlock(cx-10, cy-33, 6, 4, '#ffff00');
             drawBlock(cx+4, cy-33, 6, 4, '#ffff00');
             
-            // Chifres curvos
+            // Chifres
             ctx.beginPath();
             ctx.strokeStyle = '#2c1810';
             ctx.lineWidth = 8;
@@ -635,5 +455,66 @@ function desenharSpriteInimigo(canvasId, tipo) {
             ctx.quadraticCurveTo(cx+30, cy-60, cx+25, cy-70);
             ctx.stroke();
             
-            // Boca flamejante
-            drawBlock(cx
+            drawBlock(cx-12, cy-30, 24, 8, '#ff0000');
+            
+            for(let i = -8; i <= 6; i += 3) {
+                drawBlock(cx+i, cy-28, 3, 6, '#ffff00');
+            }
+            
+            drawBlock(cx-38, cy-15, 14, 45, '#b22222');
+            drawBlock(cx+24, cy-15, 14, 45, '#b22222');
+            drawBlock(cx-40, cy+30, 18, 15, '#8b0000');
+            drawBlock(cx+22, cy+30, 18, 15, '#8b0000');
+            
+            for(let i = 0; i < 4; i++) {
+                drawBlock(cx-42 + i*4, cy+33, 3, 12, '#ff4500');
+                drawBlock(cx+24 + i*4, cy+33, 3, 12, '#ff4500');
+            }
+            
+            drawBlock(cx-15, cy+38, 12, 35, '#b22222');
+            drawBlock(cx+3, cy+38, 12, 35, '#b22222');
+            drawBlock(cx-18, cy+71, 18, 8, '#8b0000');
+            drawBlock(cx+0, cy+71, 18, 8, '#8b0000');
+            drawBlock(cx-25, cy-52, 50, 10, '#ffd700');
+            drawBlock(cx-20, cy-56, 40, 6, '#ffed4a');
+            
+            // Aura de fogo
+            ctx.fillStyle = '#ff0000';
+            ctx.globalAlpha = 0.2;
+            ctx.beginPath();
+            ctx.arc(cx, cy+10, 50, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+            break;
+            
+        case 'bau':
+            // Baú de Suprimentos do Vault
+            drawBlock(cx-30, cy-20, 60, 40, '#27ae60');
+            drawBlock(cx-28, cy-18, 56, 36, '#2ecc71');
+            drawBlock(cx-30, cy-8, 60, 6, '#f1c40f');
+            drawBlock(cx-8, cy-20, 16, 40, '#f1c40f');
+            
+            // Detalhes metálicos
+            drawBlock(cx-28, cy-15, 56, 2, '#1e8449');
+            drawBlock(cx-28, cy+5, 56, 2, '#1e8449');
+            
+            // Fechadura
+            drawBlock(cx-3, cy-5, 6, 8, '#7f8c8d');
+            drawBlock(cx-1, cy-3, 2, 4, '#2c3e50');
+            
+            // Número do Vault
+            ctx.fillStyle = '#f1c40f';
+            ctx.font = 'bold 14px monospace';
+            ctx.fillText('13', cx-6, cy+12);
+            break;
+            
+        default:
+            // Inimigo genérico
+            drawBlock(cx-20, cy-20, 40, 40, '#e74c3c');
+            drawBlock(cx-10, cy-15, 6, 6, '#000000');
+            drawBlock(cx+4, cy-15, 6, 6, '#000000');
+            break;
+    }
+    
+    ctx.restore();
+}
