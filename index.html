@@ -88,6 +88,8 @@
         .btn-danger:hover { background: var(--pip-red); color: #fff; }
         .btn-buy { border-color: #00ff00; color: #00ff00; }
         .btn-buy:hover { background: #00ff00; color: #000; }
+        .btn-fly { border-color: #00bfff; color: #00bfff; }
+        .btn-fly:hover { background: #00bfff; color: #000; }
 
         canvas {
             background: #000;
@@ -100,6 +102,7 @@
         .bar-container { width: 100%; background: #051105; height: 16px; border-radius: 3px; margin: 4px 0 8px 0; border: 1px solid var(--pip-dim); overflow: hidden; }
         .bar-hp { height: 100%; background: var(--pip-red); width: 100%; transition: width 0.3s; }
         .bar-exp { height: 100%; background: var(--pip-blue); width: 0%; transition: width 0.3s; }
+        .bar-energia { height: 100%; background: #00bfff; width: 100%; transition: width 0.3s; }
 
         #log {
             height: 130px;
@@ -186,6 +189,16 @@
             50% { opacity: 0.5; }
         }
         
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        
         .shake-animation {
             animation: shake 0.3s ease-in-out;
         }
@@ -206,6 +219,14 @@
         @keyframes floatUp {
             0% { transform: translateY(0); opacity: 1; }
             100% { transform: translateY(-30px); opacity: 0; }
+        }
+
+        .flying-indicator {
+            position: absolute;
+            color: #00bfff;
+            font-weight: bold;
+            font-size: 12px;
+            animation: float 1s ease-in-out infinite;
         }
     </style>
 </head>
@@ -260,12 +281,20 @@
 
             <p style="margin:2px 0; font-size: 11px;">Progresso de Nível (EXP):</p>
             <div class="bar-container"><div id="ui-exp" class="bar-exp"></div></div>
+            
+            <p style="margin:2px 0; font-size: 11px;" id="energia-bar-container" style="display:none;">⚡ Energia do Reator:</p>
+            <div class="bar-container" id="energia-bar" style="display:none;"><div id="ui-energia" class="bar-energia"></div></div>
 
             <p style="font-size: 12px; margin: 6px 0;">🧪 <strong>Stimpaks (Poções):</strong> <span id="ui-pocoes" class="stat-badge">2</span>
                <button class="btn" onclick="usarPocao()" style="padding: 2px 6px; font-size: 10px; float: right;">USAR STIMPAK (+60 HP)</button>
             </p>
             
             <p style="font-size: 12px; margin: 6px 0;">💎 <strong>Caps (Dinheiro):</strong> <span id="ui-dinheiro" class="stat-badge">100</span></p>
+            
+            <p style="font-size: 12px; margin: 6px 0;" id="fly-status" style="display:none;">
+                ✈️ <strong>Modo Voo:</strong> <span style="color: #00bfff;">ATIVO</span>
+                <button class="btn btn-fly" onclick="alternarVoo()" style="padding: 2px 6px; font-size: 10px; float: right;">ALTERNAR VOO</button>
+            </p>
 
             <hr style="border-color: var(--pip-dim);">
             <h4>ATRIBUTOS S.P.E.C.I.A.L.</h4>
@@ -301,7 +330,7 @@
                 <div>
                     <h3 style="margin:0; text-align:left;">EXPLORAÇÃO DO WASTELAND</h3>
                     <span style="font-size:11px;">Bioma Atual: <span id="ui-bioma-atual" class="stat-badge">Floresta Ruínas</span> | Pos: (<span id="ui-pos-x">0</span>, <span id="ui-pos-y">0</span>)</span>
-                    <br><span style="font-size:10px; color: var(--pip-gold);">💎 Caps: <span id="ui-caps">100</span> | 🏪 Loja em (1,1)</span>
+                    <br><span style="font-size:10px; color: var(--pip-gold);">💎 Caps: <span id="ui-caps">100</span> | 🏪 Loja em (1,1) | ✈️ Voo: <span id="ui-voo-status">Desativado</span></span>
                 </div>
                 <div style="text-align: center;">
                     <canvas id="minimapCanvas" width="90" height="90" class="minimap-container"></canvas>
@@ -311,6 +340,7 @@
 
             <div style="position: relative; display: inline-block; width: 100%;">
                 <canvas id="mapCanvas" width="640" height="416"></canvas>
+                <div id="flying-indicator" class="flying-indicator" style="display:none;">✈️ VOANDO</div>
 
                 <div id="modal-event" class="modal-overlay">
                     <h2 id="modal-title" style="color: var(--pip-gold); margin-bottom: 5px;">ENCONTRO DE COMBATE</h2>
@@ -323,7 +353,7 @@
             </div>
 
             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
-                <div style="font-size: 11px; color: var(--pip-dim);">Controles: <strong>WASD / Setas</strong> | E: Interagir com Loja</div>
+                <div style="font-size: 11px; color: var(--pip-dim);">Controles: <strong>WASD / Setas</strong> | E: Loja | F: Voo</div>
                 <div class="d-pad">
                     <div></div>
                     <button class="btn" onclick="moverPlayer(0, -1)">▲</button>
@@ -350,10 +380,34 @@ const CONFIG = {
 };
 
 const biomasInfo = {
-    'Floresta': { nome: 'Ruínas Sobrepostas', corChao: '#122410', corDetalhe: '#23441d', corTexto: '#4caf50' },
-    'Deserto':  { nome: 'Deserto Radiativo', corChao: '#2b230d', corDetalhe: '#453815', corTexto: '#e67e22' },
-    'Gelo':     { nome: 'Cratera Congelada', corChao: '#0c222b', corDetalhe: '#163847', corTexto: '#00d2d3' },
-    'Volcao':   { nome: 'Cultura Vulcânica', corChao: '#2b0c0c', corDetalhe: '#471616', corTexto: '#ff4d4d' }
+    'Floresta': { 
+        nome: 'Ruínas Sobrepostas', 
+        corChao: '#1a2f1a', 
+        corDetalhe: '#2d4f2d', 
+        corTexto: '#4caf50',
+        desc: 'Floresta pós-apocalíptica com ruínas de prédios antigos'
+    },
+    'Deserto':  { 
+        nome: 'Deserto Radiativo', 
+        corChao: '#3d2b1a', 
+        corDetalhe: '#5c4020', 
+        corTexto: '#e67e22',
+        desc: 'Vastas dunas radioativas com tempestades de areia'
+    },
+    'Gelo':     { 
+        nome: 'Cratera Congelada', 
+        corChao: '#1a2b3d', 
+        corDetalhe: '#20405c', 
+        corTexto: '#00d2d3',
+        desc: 'Região congelada com ruínas de instalações científicas'
+    },
+    'Volcao':   { 
+        nome: 'Cultura Vulcânica', 
+        corChao: '#3d1a1a', 
+        corDetalhe: '#5c2020', 
+        corTexto: '#ff4d4d',
+        desc: 'Terreno vulcânico com rios de lava e cinzas'
+    }
 };
 
 const racas = {
@@ -395,23 +449,23 @@ const bancoItens = [
     { id: 't2_7', nome: 'Cinto de Utilidades Tático', slot: 'acessorio', nivelReq: 15, stats: { agi: 8, def: 5 }, hab: 'Equipamento Rápido', raridade: 'raro' },
     { id: 't2_8', nome: 'Joelheiras de Combate', slot: 'acessorio', nivelReq: 12, stats: { def: 10, vit: 6 }, hab: 'Estabilidade em Combate', raridade: 'raro' },
     { id: 't2_9', nome: 'Rifle de Assalto Modificado', slot: 'arma', classeReq: 'Paladino', nivelReq: 15, stats: { dano: 28, agi: 12 }, hab: 'Rajada Controlada', raridade: 'raro' },
-    { id: 'arm2', nome: 'Armadura de Combate T-45', slot: 'armadura', nivelReq: 10, stats: { def: 22, vit: 10 }, hab: 'Pele de Aço (+30 HP Max)', raridade: 'raro' },
+    { id: 'arm2', nome: 'Armadura de Combate T-45', slot: 'armadura', nivelReq: 10, stats: { def: 22, vit: 10 }, hab: 'Pele de Aço (+30 HP Max) | ✈️ Permite Voo', raridade: 'raro', permiteVoo: true },
     
     // TIER 3 - Nível 20-35 (Épico)
     { id: 't3_1', nome: 'Lâmina de Vibração Solar', slot: 'arma', nivelReq: 20, stats: { dano: 45, for: 15, agi: 12 }, hab: 'Fúria Nuclear (+35% Dano Crítico)', raridade: 'epico' },
     { id: 't3_2', nome: 'Canhão Gauss de Longo Alcance', slot: 'arma', nivelReq: 20, stats: { dano: 50, agi: 18 }, hab: 'Perfuração Total', raridade: 'epico' },
     { id: 't3_3', nome: 'Manipulador de Singularidade', slot: 'arma', nivelReq: 20, stats: { dano: 48, int: 20 }, hab: 'Buraco Negro em Miniatura', raridade: 'epico' },
-    { id: 't3_4', nome: 'Traje de Camuflagem Óptica', slot: 'armadura', nivelReq: 25, stats: { def: 25, agi: 15, vit: 10 }, hab: 'Invisibilidade Parcial', raridade: 'epico' },
+    { id: 't3_4', nome: 'Traje de Camuflagem Óptica', slot: 'armadura', nivelReq: 25, stats: { def: 25, agi: 15, vit: 10 }, hab: 'Invisibilidade Parcial | ✈️ Permite Voo', raridade: 'epico', permiteVoo: true },
     { id: 't3_5', nome: 'Capacete de Piloto de Caça', slot: 'capacete', nivelReq: 28, stats: { def: 18, agi: 12, int: 10 }, hab: 'Sistema de Mira Avançado', raridade: 'epico' },
     { id: 't3_6', nome: 'Manopla de Poder', slot: 'acessorio', nivelReq: 22, stats: { for: 18, dano: 20 }, hab: 'Golpe Devastador', raridade: 'epico' },
     { id: 't3_7', nome: 'Botas Antigravidade', slot: 'acessorio', nivelReq: 30, stats: { agi: 20, def: 10 }, hab: 'Salto Quântico', raridade: 'epico' },
     { id: 't3_8', nome: 'Espada Energética Vibro', slot: 'arma', classeReq: 'Cavaleiro', nivelReq: 25, stats: { dano: 42, for: 16, agi: 10 }, hab: 'Corte Molecular', raridade: 'epico' },
     
     // TIER 4 - Nível 35+ (Lendário)
-    { id: 't4_1', nome: 'Power Armor T-51b do Capitão', slot: 'armadura', nivelReq: 35, stats: { def: 45, vit: 25, for: 10 }, hab: 'Inviolável (Reduz Dano Recebido em 25%)', raridade: 'lendario' },
+    { id: 't4_1', nome: 'Power Armor T-51b do Capitão', slot: 'armadura', nivelReq: 35, stats: { def: 45, vit: 25, for: 10 }, hab: 'Inviolável (Reduz Dano em 25%) | ✈️ Voo Avançado', raridade: 'lendario', permiteVoo: true },
     { id: 't4_2', nome: 'Elmo de Enclave do Behemoth', slot: 'capacete', nivelReq: 35, stats: { def: 28, int: 15, vit: 12 }, hab: 'Visão de Combate (+20 Dano Bônus)', raridade: 'lendario' },
     { id: 't4_3', nome: 'Núcleo do Apocalipse Radiante', slot: 'acessorio', nivelReq: 40, stats: { def: 30, vit: 20, int: 15 }, hab: 'Vampirismo de Plasma (Cura 20% do Dano)', raridade: 'lendario' },
-    { id: 't4_4', nome: 'Traje de Combate Quântico', slot: 'armadura', nivelReq: 40, stats: { def: 50, vit: 30, agi: 20 }, hab: 'Escudo Quântico (Imune a 30% do dano)', raridade: 'lendario' },
+    { id: 't4_4', nome: 'Traje de Combate Quântico', slot: 'armadura', nivelReq: 40, stats: { def: 50, vit: 30, agi: 20 }, hab: 'Escudo Quântico | ✈️ Voo Supersônico', raridade: 'lendario', permiteVoo: true },
     { id: 't4_5', nome: 'Coroa do Rei Radiativo', slot: 'capacete', nivelReq: 45, stats: { def: 32, int: 25, vit: 20 }, hab: 'Mente Superior (+30% Dano Mágico)', raridade: 'lendario' },
     { id: 't4_6', nome: 'Anel do Destino', slot: 'acessorio', nivelReq: 50, stats: { for: 25, agi: 25, vit: 25, int: 25 }, hab: 'Equilíbrio Perfeito (+15% Todos Atributos)', raridade: 'lendario' },
     { id: 't4_7', nome: 'Destruidor de Mundos', slot: 'arma', nivelReq: 50, stats: { dano: 80, for: 30, agi: 25 }, hab: 'Aniquilação Total', raridade: 'lendario' }
@@ -456,6 +510,8 @@ let jogador = {
     nivel: 1, exp: 0, expProx: 70,
     hpMax: 100, hpAtual: 100, pocoes: 2,
     caps: 100,
+    energiaVoo: 100,
+    voando: false,
     equipados: { arma: null, armadura: null, capacete: null, acessorio: null },
     mochila: []
 };
@@ -468,7 +524,7 @@ let npcComerciante = {
 let mapa = [];
 let eventoAtual = null;
 
-// ================= GERADOR DE MAPA =================
+// ================= GERADOR DE MAPA MELHORADO =================
 
 function gerarMapa() {
     mapa = [];
@@ -482,26 +538,37 @@ function gerarMapa() {
 
             let tipoTile = 'chao';
             let obstaculo = false;
+            let decoracao = Math.floor(Math.random() * 5); // 0-4 para diferentes decorações
 
-            if (x === 10 || x === 30 || y === 10 || y === 30) {
+            // Estradas principais
+            if ((x >= 9 && x <= 11) || (x >= 29 && x <= 31) || 
+                (y >= 9 && y <= 11) || (y >= 29 && y <= 31)) {
                 tipoTile = 'estrada';
+                decoracao = 0;
             }
 
-            if (tipoTile === 'chao' && Math.random() < 0.12 && !(x <= 3 && y <= 3)) {
+            // Ruínas e destroços
+            if (tipoTile === 'chao' && Math.random() < 0.08 && !(x <= 3 && y <= 3)) {
                 obstaculo = true;
             }
 
+            // Elementos decorativos
+            if (tipoTile === 'chao' && !obstaculo && Math.random() < 0.15) {
+                decoracao = Math.floor(Math.random() * 4) + 1;
+            }
+
             let conteudo = null;
-            if (!obstaculo && tipoTile === 'chao') {
+            if (!obstaculo && tipoTile !== 'estrada') {
                 let rand = Math.random();
-                if (rand < 0.04 && (x > 3 || y > 3)) conteudo = 'bau';
-                else if (rand < 0.09 && (x > 3 || y > 3)) conteudo = 'mob';
+                if (rand < 0.03 && (x > 3 || y > 3)) conteudo = 'bau';
+                else if (rand < 0.10 && (x > 3 || y > 3)) conteudo = 'mob';
             }
 
             linha.push({
                 bioma: bioma,
                 tipo: tipoTile,
                 obstaculo: obstaculo,
+                decoracao: decoracao,
                 conteudo: conteudo,
                 revelado: false
             });
@@ -509,21 +576,42 @@ function gerarMapa() {
         mapa.push(linha);
     }
 
+    // Bosses em posições fixas
     mapa[5][5].conteudo = 'boss'; mapa[5][5].obstaculo = false;
     mapa[5][32].conteudo = 'boss'; mapa[5][32].obstaculo = false;
     mapa[32][5].conteudo = 'boss'; mapa[32][5].obstaculo = false;
     mapa[32][32].conteudo = 'boss'; mapa[32][32].obstaculo = false;
 }
 
-// ================= RENDERIZADOR DE SPRITES =================
+// ================= RENDERIZADOR DE SPRITES MELHORADO =================
 
-function desenharSpritePersonagem(ctx, cx, cy, size, racaName, classeName, equipados) {
+function desenharSpritePersonagem(ctx, cx, cy, size, racaName, classeName, equipados, voando) {
     ctx.save();
     
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-    ctx.beginPath();
-    ctx.ellipse(cx, cy + size * 0.4, size * 0.35, size * 0.12, 0, 0, Math.PI * 2);
-    ctx.fill();
+    // Efeito de voo
+    if (voando) {
+        ctx.shadowColor = '#00bfff';
+        ctx.shadowBlur = 15;
+        
+        // Propulsores
+        ctx.fillStyle = '#00bfff';
+        ctx.globalAlpha = 0.6;
+        ctx.beginPath();
+        ctx.arc(cx - size * 0.15, cy + size * 0.5, size * 0.1, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(cx + size * 0.15, cy + size * 0.5, size * 0.1, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+    }
+    
+    // Sombra (não desenha se estiver voando)
+    if (!voando) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.beginPath();
+        ctx.ellipse(cx, cy + size * 0.45, size * 0.35, size * 0.12, 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
 
     let skinColor = '#ffdbac';
     if (racaName === 'Orc') skinColor = '#557a2b';
@@ -531,503 +619,151 @@ function desenharSpritePersonagem(ctx, cx, cy, size, racaName, classeName, equip
     if (racaName === 'Anao') skinColor = '#e0ac69';
 
     let suitColor = '#1e3d7b';
-    if (classeName === 'Cavaleiro') suitColor = '#5a6577';
-    if (classeName === 'Paladino') suitColor = '#3a502c';
-    if (classeName === 'Feiticeiro') suitColor = '#6c2b7b';
-    if (classeName === 'Druida') suitColor = '#2b6c3d';
+    let suitDetail = '#f1c40f';
+    if (classeName === 'Cavaleiro') { suitColor = '#5a6577'; suitDetail = '#95a5a6'; }
+    if (classeName === 'Paladino') { suitColor = '#3a502c'; suitDetail = '#4a6d3c'; }
+    if (classeName === 'Feiticeiro') { suitColor = '#6c2b7b'; suitDetail = '#9b59b6'; }
+    if (classeName === 'Druida') { suitColor = '#2b6c3d'; suitDetail = '#3d8b52'; }
 
-    let temPowerArmor = equipados && equipados.armadura && equipados.armadura.nome.includes('Power');
+    let temPowerArmor = equipados && equipados.armadura && 
+                        (equipados.armadura.nome.includes('Power') || 
+                         equipados.armadura.nome.includes('T-45') ||
+                         equipados.armadura.nome.includes('T-51') ||
+                         equipados.armadura.nome.includes('Quântico'));
 
     if (temPowerArmor) {
+        // POWER ARMOR AVANÇADA
+        // Corpo principal
         ctx.fillStyle = '#7f8c8d';
-        ctx.fillRect(cx - size * 0.35, cy - size * 0.25, size * 0.7, size * 0.6);
+        ctx.fillRect(cx - size * 0.38, cy - size * 0.3, size * 0.76, size * 0.65);
+        
+        // Detalhes da armadura
         ctx.fillStyle = '#95a5a6';
-        ctx.fillRect(cx - size * 0.4, cy - size * 0.25, size * 0.2, size * 0.3);
-        ctx.fillRect(cx + size * 0.2, cy - size * 0.25, size * 0.2, size * 0.3);
-        ctx.fillStyle = '#7f8c8d';
-        ctx.fillRect(cx - size * 0.2, cy - size * 0.45, size * 0.4, size * 0.25);
+        ctx.fillRect(cx - size * 0.35, cy - size * 0.25, size * 0.7, size * 0.55);
+        
+        // Placas de blindagem
+        ctx.fillStyle = '#bdc3c7';
+        ctx.fillRect(cx - size * 0.3, cy - size * 0.2, size * 0.15, size * 0.4);
+        ctx.fillRect(cx + size * 0.15, cy - size * 0.2, size * 0.15, size * 0.4);
+        
+        // Núcleo de fusão (brilha)
         ctx.fillStyle = '#00d2d3';
-        ctx.fillRect(cx - size * 0.12, cy - size * 0.38, size * 0.24, size * 0.08);
-    } else {
-        ctx.fillStyle = suitColor;
-        ctx.fillRect(cx - size * 0.22, cy - size * 0.2, size * 0.44, size * 0.48);
+        ctx.shadowColor = '#00ffff';
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.arc(cx, cy - size * 0.05, size * 0.12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        
+        // Ombreiras robustas
+        ctx.fillStyle = '#6c7a89';
+        ctx.fillRect(cx - size * 0.42, cy - size * 0.28, size * 0.22, size * 0.35);
+        ctx.fillRect(cx + size * 0.2, cy - size * 0.28, size * 0.22, size * 0.35);
+        
+        // Capacete avançado
+        ctx.fillStyle = '#7f8c8d';
+        ctx.fillRect(cx - size * 0.22, cy - size * 0.5, size * 0.44, size * 0.28);
+        
+        // Visor brilhante
+        ctx.fillStyle = '#00d2d3';
+        ctx.shadowColor = '#00ffff';
+        ctx.shadowBlur = 5;
+        ctx.fillRect(cx - size * 0.14, cy - size * 0.42, size * 0.28, size * 0.1);
+        ctx.shadowBlur = 0;
+        
+        // Detalhes do capacete
         ctx.fillStyle = '#f1c40f';
-        ctx.fillRect(cx - size * 0.04, cy - size * 0.2, size * 0.08, size * 0.48);
+        ctx.fillRect(cx - size * 0.1, cy - size * 0.48, size * 0.2, size * 0.04);
+        
+    } else {
+        // SOBREVIVENTE MELHORADO
+        // Corpo com mais detalhes
+        ctx.fillStyle = suitColor;
+        ctx.fillRect(cx - size * 0.24, cy - size * 0.22, size * 0.48, size * 0.5);
+        
+        // Detalhes do traje
+        ctx.fillStyle = suitDetail;
+        ctx.fillRect(cx - size * 0.2, cy - size * 0.18, size * 0.4, size * 0.42);
+        
+        // Cinto
+        ctx.fillStyle = '#4a3728';
+        ctx.fillRect(cx - size * 0.24, cy + size * 0.15, size * 0.48, size * 0.04);
+        
+        // Fivela do cinto
+        ctx.fillStyle = '#f1c40f';
+        ctx.fillRect(cx - size * 0.04, cy + size * 0.14, size * 0.08, size * 0.06);
+        
+        // Cabeça mais detalhada
         ctx.fillStyle = skinColor;
         ctx.beginPath();
-        ctx.arc(cx, cy - size * 0.28, size * 0.18, 0, Math.PI * 2);
+        ctx.arc(cx, cy - size * 0.3, size * 0.2, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = '#f39c12';
-        ctx.fillRect(cx - size * 0.18, cy - size * 0.42, size * 0.36, size * 0.14);
+        
+        // Cabelo
+        ctx.fillStyle = '#4a3728';
+        ctx.beginPath();
+        ctx.arc(cx, cy - size * 0.35, size * 0.22, Math.PI, 0);
+        ctx.fill();
+        
+        // Olhos
         ctx.fillStyle = '#000';
-        ctx.fillRect(cx - size * 0.08, cy - size * 0.3, size * 0.05, size * 0.06);
-        ctx.fillRect(cx + size * 0.03, cy - size * 0.3, size * 0.05, size * 0.06);
+        ctx.fillRect(cx - size * 0.08, cy - size * 0.32, size * 0.05, size * 0.06);
+        ctx.fillRect(cx + size * 0.03, cy - size * 0.32, size * 0.05, size * 0.06);
+        
+        // Sobrancelhas
+        ctx.fillStyle = '#2c1810';
+        ctx.fillRect(cx - size * 0.09, cy - size * 0.36, size * 0.07, size * 0.02);
+        ctx.fillRect(cx + size * 0.02, cy - size * 0.36, size * 0.07, size * 0.02);
+        
+        // Braços com mangas
         ctx.fillStyle = suitColor;
-        ctx.fillRect(cx - size * 0.32, cy - size * 0.18, size * 0.1, size * 0.32);
-        ctx.fillRect(cx + size * 0.22, cy - size * 0.18, size * 0.1, size * 0.32);
-        ctx.fillStyle = '#6e4722';
-        ctx.fillRect(cx - size * 0.32, cy + size * 0.1, size * 0.1, size * 0.12);
-        ctx.fillRect(cx + size * 0.22, cy + size * 0.1, size * 0.1, size * 0.12);
+        ctx.fillRect(cx - size * 0.34, cy - size * 0.2, size * 0.12, size * 0.35);
+        ctx.fillRect(cx + size * 0.22, cy - size * 0.2, size * 0.12, size * 0.35);
+        
+        // Mãos
+        ctx.fillStyle = skinColor;
+        ctx.fillRect(cx - size * 0.35, cy + size * 0.12, size * 0.14, size * 0.12);
+        ctx.fillRect(cx + size * 0.21, cy + size * 0.12, size * 0.14, size * 0.12);
+        
+        // Pernas
+        ctx.fillStyle = '#34495e';
+        ctx.fillRect(cx - size * 0.14, cy + size * 0.25, size * 0.12, size * 0.3);
+        ctx.fillRect(cx + size * 0.02, cy + size * 0.25, size * 0.12, size * 0.3);
+        
+        // Botas
+        ctx.fillStyle = '#2c3e50';
+        ctx.fillRect(cx - size * 0.16, cy + size * 0.5, size * 0.16, size * 0.08);
+        ctx.fillRect(cx + size * 0.0, cy + size * 0.5, size * 0.16, size * 0.08);
+        
+        // Mochila (se tiver)
+        if (equipados && equipados.acessorio && equipados.acessorio.nome.includes('Mochila')) {
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(cx - size * 0.28, cy - size * 0.15, size * 0.12, size * 0.35);
+            ctx.fillStyle = '#A0522D';
+            ctx.fillRect(cx - size * 0.26, cy - size * 0.12, size * 0.08, size * 0.3);
+        }
     }
 
-    ctx.fillStyle = '#dcdde1';
-    ctx.fillRect(cx + size * 0.25, cy - size * 0.1, size * 0.12, size * 0.35);
+    // Arma na mão direita
+    if (equipados && equipados.arma) {
+        ctx.fillStyle = '#dcdde1';
+        ctx.fillRect(cx + size * 0.2, cy - size * 0.15, size * 0.08, size * 0.4);
+        
+        // Detalhes da arma baseado no tipo
+        if (equipados.arma.nome.includes('Pistola') || equipados.arma.nome.includes('Rifle')) {
+            ctx.fillStyle = '#2c3e50';
+            ctx.fillRect(cx + size * 0.22, cy - size * 0.2, size * 0.04, size * 0.15);
+        }
+        if (equipados.arma.nome.includes('Espada') || equipados.arma.nome.includes('Lâmina')) {
+            ctx.fillStyle = '#bdc3c7';
+            ctx.fillRect(cx + size * 0.18, cy - size * 0.25, size * 0.04, size * 0.5);
+        }
+    }
 
     ctx.restore();
 }
 
-function desenharSpriteInimigo(canvasId, tipo) {
-    const canvas = document.getElementById(canvasId);
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    const cx = canvas.width / 2;
-    const cy = canvas.height / 2;
-
-    ctx.save();
-    
-    function drawBlock(x, y, w, h, color) {
-        ctx.fillStyle = color;
-        ctx.fillRect(x, y, w, h);
-    }
-
-    switch(tipo) {
-        case 'ghoul':
-            drawBlock(cx-20, cy-10, 40, 50, '#6b8e4e');
-            drawBlock(cx-18, cy-8, 36, 46, '#7a9e5c');
-            drawBlock(cx-12, cy-30, 24, 22, '#8b7355');
-            drawBlock(cx-10, cy-28, 20, 18, '#9b8365');
-            drawBlock(cx-8, cy-22, 6, 5, '#39ff14');
-            drawBlock(cx+2, cy-22, 6, 5, '#39ff14');
-            drawBlock(cx-7, cy-21, 4, 3, '#ffffff');
-            drawBlock(cx+3, cy-21, 4, 3, '#ffffff');
-            drawBlock(cx-6, cy-14, 12, 4, '#4a3728');
-            drawBlock(cx-22, cy-5, 6, 25, '#7a9e5c');
-            drawBlock(cx+16, cy-5, 6, 25, '#7a9e5c');
-            drawBlock(cx-24, cy+20, 8, 6, '#6b8e4e');
-            drawBlock(cx+16, cy+20, 8, 6, '#6b8e4e');
-            drawBlock(cx-12, cy+40, 10, 20, '#7a9e5c');
-            drawBlock(cx+2, cy+40, 10, 20, '#7a9e5c');
-            ctx.fillStyle = '#39ff14';
-            ctx.globalAlpha = 0.3;
-            ctx.beginPath();
-            ctx.arc(cx, cy+10, 30, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.globalAlpha = 1;
-            break;
-            
-        case 'raider':
-            drawBlock(cx-18, cy-15, 36, 45, '#5c4033');
-            drawBlock(cx-16, cy-13, 32, 41, '#6b4b3e');
-            drawBlock(cx-10, cy-30, 20, 18, '#4a4a4a');
-            drawBlock(cx-8, cy-28, 16, 14, '#5a5a5a');
-            drawBlock(cx-6, cy-24, 12, 4, '#ff6600');
-            drawBlock(cx-7, cy-26, 4, 3, '#ffffff');
-            drawBlock(cx+3, cy-26, 4, 3, '#000000');
-            drawBlock(cx-22, cy-10, 8, 30, '#6b4b3e');
-            drawBlock(cx+14, cy-10, 8, 30, '#6b4b3e');
-            drawBlock(cx+18, cy+10, 15, 4, '#808080');
-            drawBlock(cx+20, cy+14, 4, 8, '#808080');
-            drawBlock(cx+22, cy+8, 8, 6, '#696969');
-            drawBlock(cx-10, cy+30, 8, 25, '#4a3728');
-            drawBlock(cx+2, cy+30, 8, 25, '#4a3728');
-            drawBlock(cx-12, cy+52, 12, 6, '#2c1810');
-            drawBlock(cx+0, cy+52, 12, 6, '#2c1810');
-            break;
-            
-        case 'behemoth':
-            drawBlock(cx-35, cy-30, 70, 80, '#4a6741');
-            drawBlock(cx-33, cy-28, 66, 76, '#5a7b51');
-            drawBlock(cx-25, cy-20, 15, 30, '#3d5a35');
-            drawBlock(cx+10, cy-20, 15, 30, '#3d5a35');
-            drawBlock(cx-20, cy-50, 40, 28, '#4a6741');
-            drawBlock(cx-18, cy-48, 36, 24, '#5a7b51');
-            drawBlock(cx-12, cy-40, 10, 8, '#ff0000');
-            drawBlock(cx+2, cy-40, 10, 8, '#ff0000');
-            drawBlock(cx-10, cy-38, 6, 4, '#ffff00');
-            drawBlock(cx+4, cy-38, 6, 4, '#ffff00');
-            drawBlock(cx-10, cy-30, 20, 10, '#2c1810');
-            for(let i = -6; i <= 4; i += 3) {
-                drawBlock(cx+i, cy-28, 3, 5, '#ffffff');
-            }
-            drawBlock(cx-40, cy-15, 15, 50, '#5a7b51');
-            drawBlock(cx+25, cy-15, 15, 50, '#5a7b51');
-            drawBlock(cx-42, cy+35, 20, 15, '#3d5a35');
-            drawBlock(cx+22, cy+35, 20, 15, '#3d5a35');
-            drawBlock(cx+30, cy-5, 8, 60, '#808080');
-            drawBlock(cx+32, cy-8, 4, 65, '#a8a8a8');
-            drawBlock(cx-15, cy+50, 12, 30, '#5a7b51');
-            drawBlock(cx+3, cy+50, 12, 30, '#5a7b51');
-            drawBlock(cx-18, cy+78, 18, 8, '#3d5a35');
-            drawBlock(cx+0, cy+78, 18, 8, '#3d5a35');
-            drawBlock(cx-25, cy-58, 50, 10, '#ffd700');
-            drawBlock(cx-20, cy-62, 40, 6, '#ffed4a');
-            ctx.fillStyle = '#ff0000';
-            ctx.globalAlpha = 0.2;
-            ctx.beginPath();
-            ctx.arc(cx, cy, 45, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.globalAlpha = 1;
-            break;
-            
-        case 'deathclaw':
-            drawBlock(cx-30, cy-15, 60, 50, '#8b4513');
-            drawBlock(cx-28, cy-13, 56, 46, '#a0522d');
-            for(let i = 0; i < 5; i++) {
-                drawBlock(cx-20 + i*8, cy-5, 6, 8, '#6b3410');
-                drawBlock(cx-20 + i*8, cy+10, 6, 8, '#6b3410');
-            }
-            drawBlock(cx-25, cy-35, 35, 25, '#a0522d');
-            drawBlock(cx-23, cy-33, 31, 21, '#b5653b');
-            drawBlock(cx-15, cy-28, 8, 8, '#ff0000');
-            drawBlock(cx+2, cy-28, 8, 8, '#ff0000');
-            drawBlock(cx-13, cy-26, 4, 4, '#ffff00');
-            drawBlock(cx+4, cy-26, 4, 4, '#ffff00');
-            drawBlock(cx-20, cy-18, 25, 8, '#8b4513');
-            for(let i = -16; i <= 8; i += 5) {
-                drawBlock(cx+i, cy-16, 3, 8, '#ffffff');
-            }
-            ctx.beginPath();
-            ctx.strokeStyle = '#6b3410';
-            ctx.lineWidth = 6;
-            ctx.moveTo(cx-22, cy-33);
-            ctx.lineTo(cx-28, cy-42);
-            ctx.moveTo(cx+12, cy-33);
-            ctx.lineTo(cx+18, cy-42);
-            ctx.stroke();
-            drawBlock(cx-38, cy-10, 12, 35, '#a0522d');
-            drawBlock(cx+26, cy-10, 12, 35, '#a0522d');
-            for(let i = 0; i < 3; i++) {
-                drawBlock(cx-42 + i*3, cy+25, 3, 15, '#2c1810');
-                drawBlock(cx+30 + i*3, cy+25, 3, 15, '#2c1810');
-            }
-            drawBlock(cx-15, cy+35, 14, 30, '#a0522d');
-            drawBlock(cx+1, cy+35, 14, 30, '#a0522d');
-            drawBlock(cx-18, cy+63, 20, 6, '#6b3410');
-            drawBlock(cx-2, cy+63, 20, 6, '#6b3410');
-            ctx.beginPath();
-            ctx.strokeStyle = '#a0522d';
-            ctx.lineWidth = 8;
-            ctx.moveTo(cx+30, cy+15);
-            ctx.quadraticCurveTo(cx+45, cy+30, cx+50, cy+50);
-            ctx.stroke();
-            for(let i = 0; i < 4; i++) {
-                drawBlock(cx+35 + i*4, cy+20 + i*8, 4, 4, '#6b3410');
-            }
-            drawBlock(cx-20, cy-42, 30, 8, '#ffd700');
-            drawBlock(cx-15, cy-46, 20, 5, '#ffed4a');
-            ctx.fillStyle = '#ff0000';
-            ctx.globalAlpha = 0.15;
-            ctx.beginPath();
-            ctx.arc(cx, cy+10, 40, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.globalAlpha = 1;
-            break;
-            
-        case 'scorpion':
-            drawBlock(cx-25, cy-15, 50, 30, '#8b4513');
-            drawBlock(cx-23, cy-13, 46, 26, '#a0522d');
-            for(let i = 0; i < 4; i++) {
-                drawBlock(cx-20 + i*10, cy-10, 6, 20, '#cd853f');
-            }
-            drawBlock(cx-30, cy-12, 12, 16, '#a0522d');
-            drawBlock(cx-32, cy-10, 8, 12, '#8b4513');
-            drawBlock(cx-28, cy-8, 3, 3, '#ff0000');
-            drawBlock(cx-24, cy-8, 3, 3, '#ff0000');
-            drawBlock(cx-26, cy-6, 4, 4, '#ff4444');
-            drawBlock(cx-38, cy-18, 12, 8, '#cd853f');
-            drawBlock(cx-40, cy-20, 8, 6, '#a0522d');
-            drawBlock(cx-38, cy-14, 10, 5, '#cd853f');
-            drawBlock(cx-40, cy-12, 8, 4, '#a0522d');
-            ctx.beginPath();
-            ctx.strokeStyle = '#cd853f';
-            ctx.lineWidth = 6;
-            ctx.moveTo(cx+25, cy-5);
-            ctx.quadraticCurveTo(cx+35, cy-30, cx+40, cy-20);
-            ctx.stroke();
-            drawBlock(cx+38, cy-24, 8, 8, '#ff4500');
-            drawBlock(cx+40, cy-26, 4, 6, '#ff0000');
-            for(let i = 0; i < 6; i++) {
-                const offsetX = -20 + i * 8;
-                drawBlock(cx+offsetX, cy+15, 3, 20, '#cd853f');
-                drawBlock(cx+offsetX+3, cy+35, 3, 8, '#a0522d');
-            }
-            break;
-            
-        case 'mercenary':
-            drawBlock(cx-20, cy-20, 40, 50, '#2c3e50');
-            drawBlock(cx-18, cy-18, 36, 46, '#34495e');
-            drawBlock(cx-16, cy-15, 32, 40, '#4a6741');
-            drawBlock(cx-12, cy-35, 24, 20, '#2c3e50');
-            drawBlock(cx-10, cy-33, 20, 16, '#34495e');
-            drawBlock(cx-8, cy-28, 16, 5, '#00ffff');
-            drawBlock(cx-6, cy-27, 12, 3, '#00ddff');
-            drawBlock(cx-24, cy-15, 8, 35, '#34495e');
-            drawBlock(cx+16, cy-15, 8, 35, '#34495e');
-            drawBlock(cx+20, cy-5, 25, 5, '#2c3e50');
-            drawBlock(cx+25, cy-10, 4, 10, '#34495e');
-            drawBlock(cx+20, cy-3, 18, 3, '#1a252f');
-            drawBlock(cx-12, cy+28, 10, 30, '#2c3e50');
-            drawBlock(cx+2, cy+28, 10, 30, '#2c3e50');
-            drawBlock(cx-14, cy+55, 14, 8, '#1a252f');
-            drawBlock(cx+0, cy+55, 14, 8, '#1a252f');
-            drawBlock(cx-16, cy+20, 32, 4, '#7f8c8d');
-            break;
-            
-        case 'hound':
-            drawBlock(cx-22, cy-8, 44, 28, '#8fbc8f');
-            drawBlock(cx-20, cy-6, 40, 24, '#a8d8a8');
-            drawBlock(cx-15, cy-4, 8, 12, '#b0e0e6');
-            drawBlock(cx+5, cy-2, 10, 8, '#b0e0e6');
-            drawBlock(cx-28, cy-18, 20, 20, '#8fbc8f');
-            drawBlock(cx-26, cy-16, 16, 16, '#a8d8a8');
-            drawBlock(cx-22, cy-12, 5, 5, '#00ffff');
-            drawBlock(cx-15, cy-12, 5, 5, '#00ffff');
-            drawBlock(cx-21, cy-11, 3, 3, '#ffffff');
-            drawBlock(cx-14, cy-11, 3, 3, '#ffffff');
-            drawBlock(cx-30, cy-10, 8, 8, '#778899');
-            drawBlock(cx-22, cy-24, 6, 8, '#8fbc8f');
-            drawBlock(cx-14, cy-24, 6, 8, '#8fbc8f');
-            drawBlock(cx-18, cy+18, 8, 20, '#8fbc8f');
-            drawBlock(cx+6, cy+18, 8, 20, '#8fbc8f');
-            drawBlock(cx-14, cy+36, 10, 15, '#a8d8a8');
-            drawBlock(cx+4, cy+36, 10, 15, '#a8d8a8');
-            drawBlock(cx+24, cy-4, 12, 6, '#8fbc8f');
-            drawBlock(cx+26, cy-6, 8, 4, '#a8d8a8');
-            ctx.fillStyle = '#e0ffff';
-            ctx.globalAlpha = 0.5;
-            ctx.beginPath();
-            ctx.arc(cx-35, cy-12, 8, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.globalAlpha = 1;
-            break;
-            
-        case 'robot':
-            drawBlock(cx-20, cy-20, 40, 45, '#808080');
-            drawBlock(cx-18, cy-18, 36, 41, '#a8a8a8');
-            drawBlock(cx-16, cy-15, 32, 35, '#696969');
-            drawBlock(cx-10, cy-30, 20, 15, '#808080');
-            drawBlock(cx-8, cy-28, 16, 11, '#a8a8a8');
-            drawBlock(cx-6, cy-24, 4, 4, '#00ffff');
-            drawBlock(cx+2, cy-24, 4, 4, '#00ffff');
-            drawBlock(cx-5, cy-23, 2, 2, '#ffffff');
-            drawBlock(cx+3, cy-23, 2, 2, '#ffffff');
-            drawBlock(cx-1, cy-35, 3, 8, '#c0c0c0');
-            drawBlock(cx-1, cy-38, 5, 5, '#ff0000');
-            drawBlock(cx-24, cy-10, 8, 30, '#808080');
-            drawBlock(cx+16, cy-10, 8, 30, '#808080');
-            drawBlock(cx+20, cy-5, 12, 8, '#a8a8a8');
-            drawBlock(cx+22, cy-7, 8, 4, '#00bfff');
-            drawBlock(cx-28, cy-8, 8, 16, '#87ceeb');
-            drawBlock(cx-26, cy-6, 4, 12, '#b0e0e6');
-            drawBlock(cx-12, cy+25, 10, 25, '#696969');
-            drawBlock(cx+2, cy+25, 10, 25, '#696969');
-            drawBlock(cx-14, cy+48, 14, 6, '#808080');
-            drawBlock(cx+0, cy+48, 14, 6, '#808080');
-            for(let i = 0; i < 3; i++) {
-                const angle = (Date.now() / 1000 + i) * 2;
-                const radius = 25 + i * 5;
-                const px = cx + Math.cos(angle) * radius;
-                const py = cy + Math.sin(angle) * radius;
-                ctx.fillStyle = '#00ffff';
-                ctx.globalAlpha = 0.3;
-                ctx.fillRect(px, py, 3, 3);
-            }
-            ctx.globalAlpha = 1;
-            break;
-            
-        case 'leech':
-            drawBlock(cx-15, cy-25, 30, 50, '#8b0000');
-            drawBlock(cx-13, cy-23, 26, 46, '#a52a2a');
-            drawBlock(cx-10, cy-20, 6, 40, '#ff4500');
-            drawBlock(cx+4, cy-15, 4, 35, '#ff4500');
-            drawBlock(cx-18, cy-35, 36, 18, '#b22222');
-            drawBlock(cx-16, cy-33, 32, 14, '#dc143c');
-            drawBlock(cx-10, cy-28, 20, 10, '#8b0000');
-            for(let i = -8; i <= 6; i += 4) {
-                drawBlock(cx+i, cy-26, 3, 5, '#ffffff');
-            }
-            drawBlock(cx-16, cy-30, 4, 6, '#ff6600');
-            drawBlock(cx+12, cy-30, 4, 6, '#ff6600');
-            for(let i = 0; i < 3; i++) {
-                drawBlock(cx-22 + i*5, cy+25, 3, 15, '#b22222');
-                drawBlock(cx+10 + i*5, cy+20, 3, 15, '#b22222');
-            }
-            ctx.fillStyle = '#ff4500';
-            ctx.globalAlpha = 0.2;
-            ctx.beginPath();
-            ctx.arc(cx, cy, 35, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.globalAlpha = 1;
-            break;
-            
-        case 'sentry':
-            drawBlock(cx-30, cy-25, 60, 55, '#4a4a4a');
-            drawBlock(cx-28, cy-23, 56, 51, '#5a5a5a');
-            drawBlock(cx-10, cy-10, 20, 25, '#ff4500');
-            drawBlock(cx-8, cy-8, 16, 21, '#ff6600');
-            drawBlock(cx-6, cy-6, 12, 17, '#ff8800');
-            drawBlock(cx-12, cy-35, 24, 15, '#4a4a4a');
-            drawBlock(cx-4, cy-30, 8, 8, '#ff0000');
-            drawBlock(cx-2, cy-28, 4, 4, '#ffffff');
-            drawBlock(cx-12, cy-32, 3, 3, '#00ff00');
-            drawBlock(cx+9, cy-32, 3, 3, '#00ff00');
-            drawBlock(cx-38, cy-20, 12, 40, '#4a4a4a');
-            drawBlock(cx+26, cy-20, 12, 40, '#4a4a4a');
-            drawBlock(cx-40, cy-18, 16, 6, '#696969');
-            drawBlock(cx+24, cy-18, 16, 6, '#696969');
-            drawBlock(cx-42, cy-17, 4, 4, '#808080');
-            drawBlock(cx+38, cy-17, 4, 4, '#808080');
-            drawBlock(cx-28, cy-28, 8, 8, '#696969');
-            drawBlock(cx+20, cy-28, 8, 8, '#696969');
-            drawBlock(cx-20, cy+28, 15, 20, '#4a4a4a');
-            drawBlock(cx+5, cy+28, 15, 20, '#4a4a4a');
-            drawBlock(cx-22, cy+45, 19, 8, '#696969');
-            drawBlock(cx+3, cy+45, 19, 8, '#696969');
-            for(let i = 0; i < 3; i++) {
-                drawBlock(cx-20 + i*6, cy+40, 5, 5, '#808080');
-                drawBlock(cx+5 + i*6, cy+40, 5, 5, '#808080');
-            }
-            break;
-            
-        case 'yeti':
-            drawBlock(cx-35, cy-30, 70, 80, '#e0ffff');
-            drawBlock(cx-33, cy-28, 66, 76, '#f0ffff');
-            for(let i = 0; i < 10; i++) {
-                drawBlock(cx-30 + i*6, cy-20, 3, 40, '#b0e0e6');
-            }
-            drawBlock(cx-22, cy-50, 44, 30, '#e0ffff');
-            drawBlock(cx-20, cy-48, 40, 26, '#f0ffff');
-            drawBlock(cx-12, cy-38, 10, 10, '#00ffff');
-            drawBlock(cx+2, cy-38, 10, 10, '#00ffff');
-            drawBlock(cx-10, cy-36, 6, 6, '#ffffff');
-            drawBlock(cx+4, cy-36, 6, 6, '#ffffff');
-            drawBlock(cx-10, cy-30, 20, 8, '#87ceeb');
-            for(let i = -6; i <= 4; i += 3) {
-                drawBlock(cx+i, cy-28, 3, 5, '#ffffff');
-            }
-            drawBlock(cx-42, cy-15, 16, 50, '#f0ffff');
-            drawBlock(cx+26, cy-15, 16, 50, '#f0ffff');
-            drawBlock(cx-44, cy+35, 22, 18, '#b0e0e6');
-            drawBlock(cx+22, cy+35, 22, 18, '#b0e0e6');
-            drawBlock(cx-40, cy+30, 6, 8, '#00ffff');
-            drawBlock(cx+34, cy+30, 6, 8, '#00ffff');
-            drawBlock(cx-18, cy+50, 14, 35, '#f0ffff');
-            drawBlock(cx+4, cy+50, 14, 35, '#f0ffff');
-            drawBlock(cx-20, cy+83, 18, 8, '#b0e0e6');
-            drawBlock(cx+2, cy+83, 18, 8, '#b0e0e6');
-            drawBlock(cx-8, cy-8, 16, 20, '#ff4500');
-            drawBlock(cx-6, cy-6, 12, 16, '#ff6600');
-            drawBlock(cx-4, cy-4, 8, 12, '#ffff00');
-            drawBlock(cx-22, cy-58, 44, 10, '#00ffff');
-            drawBlock(cx-18, cy-62, 36, 6, '#e0ffff');
-            ctx.fillStyle = '#00ffff';
-            ctx.globalAlpha = 0.1;
-            ctx.beginPath();
-            ctx.ellipse(cx, cy, 50, 60, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.globalAlpha = 1;
-            break;
-            
-        case 'demon':
-            drawBlock(cx-30, cy-25, 60, 65, '#8b0000');
-            drawBlock(cx-28, cy-23, 56, 61, '#b22222');
-            ctx.beginPath();
-            ctx.fillStyle = '#ff4500';
-            ctx.globalAlpha = 0.6;
-            ctx.moveTo(cx-30, cy-15);
-            ctx.lineTo(cx-50, cy-40);
-            ctx.lineTo(cx-35, cy-20);
-            ctx.lineTo(cx-45, cy-35);
-            ctx.lineTo(cx-30, cy-15);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.moveTo(cx+30, cy-15);
-            ctx.lineTo(cx+50, cy-40);
-            ctx.lineTo(cx+35, cy-20);
-            ctx.lineTo(cx+45, cy-35);
-            ctx.lineTo(cx+30, cy-15);
-            ctx.fill();
-            ctx.globalAlpha = 1;
-            drawBlock(cx-20, cy-45, 40, 30, '#b22222');
-            drawBlock(cx-18, cy-43, 36, 26, '#dc143c');
-            drawBlock(cx-12, cy-35, 10, 8, '#ff0000');
-            drawBlock(cx+2, cy-35, 10, 8, '#ff0000');
-            drawBlock(cx-10, cy-33, 6, 4, '#ffff00');
-            drawBlock(cx+4, cy-33, 6, 4, '#ffff00');
-            ctx.beginPath();
-            ctx.strokeStyle = '#2c1810';
-            ctx.lineWidth = 8;
-            ctx.moveTo(cx-18, cy-43);
-            ctx.quadraticCurveTo(cx-30, cy-60, cx-25, cy-70);
-            ctx.moveTo(cx+18, cy-43);
-            ctx.quadraticCurveTo(cx+30, cy-60, cx+25, cy-70);
-            ctx.stroke();
-            drawBlock(cx-12, cy-30, 24, 8, '#ff0000');
-            for(let i = -8; i <= 6; i += 3) {
-                drawBlock(cx+i, cy-28, 3, 6, '#ffff00');
-            }
-            drawBlock(cx-38, cy-15, 14, 45, '#b22222');
-            drawBlock(cx+24, cy-15, 14, 45, '#b22222');
-            drawBlock(cx-40, cy+30, 18, 15, '#8b0000');
-            drawBlock(cx+22, cy+30, 18, 15, '#8b0000');
-            for(let i = 0; i < 4; i++) {
-                drawBlock(cx-42 + i*4, cy+33, 3, 12, '#ff4500');
-                drawBlock(cx+24 + i*4, cy+33, 3, 12, '#ff4500');
-            }
-            drawBlock(cx-15, cy+38, 12, 35, '#b22222');
-            drawBlock(cx+3, cy+38, 12, 35, '#b22222');
-            drawBlock(cx-18, cy+71, 18, 8, '#8b0000');
-            drawBlock(cx+0, cy+71, 18, 8, '#8b0000');
-            drawBlock(cx-25, cy-52, 50, 10, '#ffd700');
-            drawBlock(cx-20, cy-56, 40, 6, '#ffed4a');
-            ctx.fillStyle = '#ff0000';
-            ctx.globalAlpha = 0.2;
-            ctx.beginPath();
-            ctx.arc(cx, cy+10, 50, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.globalAlpha = 1;
-            break;
-            
-        case 'bau':
-            drawBlock(cx-30, cy-20, 60, 40, '#27ae60');
-            drawBlock(cx-28, cy-18, 56, 36, '#2ecc71');
-            drawBlock(cx-30, cy-8, 60, 6, '#f1c40f');
-            drawBlock(cx-8, cy-20, 16, 40, '#f1c40f');
-            drawBlock(cx-28, cy-15, 56, 2, '#1e8449');
-            drawBlock(cx-28, cy+5, 56, 2, '#1e8449');
-            drawBlock(cx-3, cy-5, 6, 8, '#7f8c8d');
-            drawBlock(cx-1, cy-3, 2, 4, '#2c3e50');
-            ctx.fillStyle = '#f1c40f';
-            ctx.font = 'bold 14px monospace';
-            ctx.fillText('13', cx-6, cy+12);
-            break;
-            
-        case 'npc':
-            // Sprite do comerciante
-            drawBlock(cx-20, cy-10, 40, 50, '#8B4513');
-            drawBlock(cx-18, cy-8, 36, 46, '#A0522D');
-            drawBlock(cx-12, cy-30, 24, 22, '#FFD700');
-            drawBlock(cx-10, cy-28, 20, 18, '#FFA500');
-            drawBlock(cx-6, cy-22, 4, 4, '#000000');
-            drawBlock(cx+2, cy-22, 4, 4, '#000000');
-            drawBlock(cx-22, cy-5, 6, 25, '#A0522D');
-            drawBlock(cx+16, cy-5, 6, 25, '#A0522D');
-            drawBlock(cx-12, cy+40, 10, 20, '#8B4513');
-            drawBlock(cx+2, cy+40, 10, 20, '#8B4513');
-            // Balcão da loja
-            drawBlock(cx-25, cy+55, 50, 10, '#654321');
-            ctx.fillStyle = '#FFD700';
-            ctx.font = 'bold 10px monospace';
-            ctx.fillText('LOJA', cx-15, cy+48);
-            break;
-    }
-    
-    ctx.restore();
-}
-
-// ================= RENDERIZADOR DO MAPA =================
+// ================= RENDERIZADOR DO MAPA MELHORADO =================
 
 function desenharMapa() {
     const canvas = document.getElementById('mapCanvas');
@@ -1053,57 +789,164 @@ function desenharMapa() {
             tile.revelado = true;
 
             const infoB = biomasInfo[tile.bioma];
-            ctx.fillStyle = infoB.corChao;
+            
+            // Fundo do terreno com gradiente
+            let gradient = ctx.createLinearGradient(screenX, screenY, screenX + ts, screenY + ts);
+            gradient.addColorStop(0, infoB.corChao);
+            gradient.addColorStop(1, infoB.corDetalhe);
+            ctx.fillStyle = gradient;
             ctx.fillRect(screenX, screenY, ts, ts);
 
             if (tile.tipo === 'estrada') {
+                // Estrada asfaltada com marcas
                 ctx.fillStyle = '#1c1c1c';
                 ctx.fillRect(screenX, screenY, ts, ts);
+                
+                // Linha central amarela
                 ctx.fillStyle = '#f1c40f';
-                ctx.fillRect(screenX + ts/2 - 2, screenY + ts/2 - 2, 4, 4);
+                ctx.fillRect(screenX + ts/2 - 1, screenY, 2, ts);
+                
+                // Marcas de desgaste
+                ctx.fillStyle = '#2c2c2c';
+                for (let i = 0; i < ts; i += 8) {
+                    ctx.fillRect(screenX + i, screenY + ts/4, 4, 2);
+                    ctx.fillRect(screenX + i, screenY + ts*3/4, 4, 2);
+                }
             } else {
+                // Textura do terreno baseada no bioma
                 ctx.fillStyle = infoB.corDetalhe;
-                ctx.fillRect(screenX + 2, screenY + 2, 4, 4);
-                ctx.fillRect(screenX + ts - 6, screenY + ts - 6, 4, 4);
+                
+                // Decorações variadas
+                switch(tile.decoracao) {
+                    case 0: // Terreno limpo
+                        ctx.fillRect(screenX + 2, screenY + 2, 3, 3);
+                        ctx.fillRect(screenX + ts - 5, screenY + ts - 5, 3, 3);
+                        break;
+                    case 1: // Pedras pequenas
+                        ctx.fillRect(screenX + 4, screenY + 6, 4, 3);
+                        ctx.fillRect(screenX + ts - 8, screenY + ts - 8, 3, 4);
+                        ctx.fillRect(screenX + ts/2, screenY + 4, 3, 3);
+                        break;
+                    case 2: // Vegetação rasteira
+                        ctx.fillStyle = infoB.corTexto;
+                        ctx.globalAlpha = 0.3;
+                        ctx.fillRect(screenX + 3, screenY + ts - 6, 6, 3);
+                        ctx.fillRect(screenX + ts - 9, screenY + 3, 6, 3);
+                        ctx.fillRect(screenX + ts/2 - 3, screenY + ts/2 - 3, 6, 3);
+                        ctx.globalAlpha = 1;
+                        break;
+                    case 3: // Destroços
+                        ctx.fillStyle = '#4a4a4a';
+                        ctx.fillRect(screenX + 5, screenY + 8, 8, 4);
+                        ctx.fillRect(screenX + ts - 12, screenY + ts - 10, 6, 5);
+                        ctx.fillStyle = '#696969';
+                        ctx.fillRect(screenX + 6, screenY + 9, 3, 2);
+                        ctx.fillRect(screenX + ts - 11, screenY + ts - 9, 2, 3);
+                        break;
+                    case 4: // Flores/ervas mutantes (radioativas)
+                        ctx.fillStyle = '#39ff14';
+                        ctx.globalAlpha = 0.4;
+                        ctx.fillRect(screenX + 6, screenY + ts - 8, 3, 5);
+                        ctx.fillRect(screenX + ts - 10, screenY + 5, 3, 5);
+                        ctx.fillStyle = '#ff00ff';
+                        ctx.fillRect(screenX + ts/2 + 2, screenY + ts - 6, 3, 5);
+                        ctx.globalAlpha = 1;
+                        break;
+                }
             }
 
+            // Obstáculos detalhados
             if (tile.obstaculo) {
+                // Sombra do obstáculo
+                ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                ctx.fillRect(screenX + 6, screenY + 6, ts - 8, ts - 8);
+                
+                // Obstáculo principal
                 ctx.fillStyle = '#3a3a3a';
                 ctx.fillRect(screenX + 4, screenY + 4, ts - 8, ts - 8);
-                ctx.strokeStyle = '#111';
+                
+                // Detalhes do obstáculo
+                ctx.fillStyle = '#4a4a4a';
+                ctx.fillRect(screenX + 6, screenY + 6, 4, 4);
+                ctx.fillRect(screenX + ts - 10, screenY + ts - 10, 4, 4);
+                
+                ctx.strokeStyle = '#555';
                 ctx.strokeRect(screenX + 4, screenY + 4, ts - 8, ts - 8);
             }
 
+            // Conteúdo interativo
             if (tile.conteudo === 'bau') {
                 ctx.fillStyle = '#f1c40f';
                 ctx.font = '16px sans-serif';
                 ctx.fillText('📦', screenX + 6, screenY + 22);
+                
+                // Brilho no baú
+                ctx.fillStyle = '#fff';
+                ctx.globalAlpha = 0.3;
+                ctx.beginPath();
+                ctx.arc(screenX + ts/2, screenY + ts/2, 8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+                
             } else if (tile.conteudo === 'mob') {
                 ctx.fillStyle = '#e74c3c';
                 ctx.font = '16px sans-serif';
                 ctx.fillText('👾', screenX + 6, screenY + 22);
+                
             } else if (tile.conteudo === 'boss') {
+                // Efeito pulsante para boss
+                let pulse = Math.sin(Date.now() / 500) * 0.3 + 0.7;
                 ctx.fillStyle = '#ff0000';
+                ctx.globalAlpha = pulse;
                 ctx.font = '20px sans-serif';
                 ctx.fillText('💀', screenX + 4, screenY + 24);
+                ctx.globalAlpha = 1;
+                
+                // Aura vermelha
+                ctx.fillStyle = '#ff0000';
+                ctx.globalAlpha = 0.2;
+                ctx.beginPath();
+                ctx.arc(screenX + ts/2, screenY + ts/2, 12, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
             }
 
-            // Desenha NPC Comerciante
+            // NPC Comerciante com efeito
             if (mx === npcComerciante.x && my === npcComerciante.y) {
                 ctx.fillStyle = '#FFD700';
                 ctx.font = '16px sans-serif';
                 ctx.fillText('🏪', screenX + 4, screenY + 24);
+                
+                // Brilho dourado
+                ctx.fillStyle = '#FFD700';
+                ctx.globalAlpha = 0.2;
+                ctx.beginPath();
+                ctx.arc(screenX + ts/2, screenY + ts/2, 10, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
             }
 
-            ctx.strokeStyle = '#00000033';
+            // Grade do mapa
+            ctx.strokeStyle = 'rgba(0,0,0,0.2)';
             ctx.strokeRect(screenX, screenY, ts, ts);
         }
     }
 
+    // Desenha o jogador
     let pScreenX = (jogador.x - startX) * ts + ts / 2;
     let pScreenY = (jogador.y - startY) * ts + ts / 2;
 
-    desenharSpritePersonagem(ctx, pScreenX, pScreenY, ts * 1.1, jogador.raca, jogador.classe, jogador.equipados);
+    // Efeito de altitude se estiver voando
+    if (jogador.voando) {
+        pScreenY -= 10; // Eleva o sprite
+        document.getElementById('flying-indicator').style.display = 'block';
+        document.getElementById('flying-indicator').style.left = pScreenX + 'px';
+        document.getElementById('flying-indicator').style.top = (pScreenY - 20) + 'px';
+    } else {
+        document.getElementById('flying-indicator').style.display = 'none';
+    }
+
+    desenharSpritePersonagem(ctx, pScreenX, pScreenY, ts * 1.2, jogador.raca, jogador.classe, jogador.equipados, jogador.voando);
 
     desenharMinimapa();
 }
@@ -1124,6 +967,7 @@ function desenharMinimapa() {
                 ctx.fillStyle = biomasInfo[tile.bioma].corChao;
                 if (tile.conteudo === 'boss') ctx.fillStyle = '#ff0000';
                 else if (tile.conteudo === 'bau') ctx.fillStyle = '#f1c40f';
+                else if (tile.tipo === 'estrada') ctx.fillStyle = '#444';
             }
             ctx.fillRect(x * scale, y * scale, scale, scale);
         }
@@ -1133,11 +977,69 @@ function desenharMinimapa() {
     ctx.fillStyle = '#FFD700';
     ctx.fillRect(npcComerciante.x * scale - 1, npcComerciante.y * scale - 1, scale + 2, scale + 2);
 
-    ctx.fillStyle = '#2bfd02';
+    // Jogador no minimapa
+    ctx.fillStyle = jogador.voando ? '#00bfff' : '#2bfd02';
     ctx.fillRect(jogador.x * scale - 1, jogador.y * scale - 1, scale + 2, scale + 2);
 }
 
-// ================= SISTEMA DE LOJA =================
+// ================= SISTEMA DE VOO =================
+
+function temPowerArmor() {
+    return jogador.equipados.armadura && jogador.equipados.armadura.permiteVoo;
+}
+
+function alternarVoo() {
+    if (!temPowerArmor()) {
+        logMensagem("✈️ Você precisa de uma Power Armor (T-45, T-51b, etc.) para voar!");
+        return;
+    }
+    
+    if (jogador.energiaVoo <= 0 && !jogador.voando) {
+        logMensagem("⚡ Energia do reator esgotada! Aguarde recarregar.");
+        return;
+    }
+    
+    jogador.voando = !jogador.voando;
+    
+    if (jogador.voando) {
+        logMensagem("✈️ **SISTEMA DE VOO ATIVADO!** Você pode sobrevoar obstáculos!");
+        document.getElementById('fly-status').style.display = 'block';
+        document.getElementById('ui-voo-status').innerText = 'Ativo';
+    } else {
+        logMensagem("✈️ **SISTEMA DE VOO DESATIVADO!**");
+        document.getElementById('fly-status').style.display = 'none';
+        document.getElementById('ui-voo-status').innerText = 'Desativado';
+    }
+    
+    atualizarUI();
+    desenharMapa();
+}
+
+function consumirEnergiaVoo() {
+    if (jogador.voando) {
+        jogador.energiaVoo -= 2;
+        if (jogador.energiaVoo <= 0) {
+            jogador.energiaVoo = 0;
+            jogador.voando = false;
+            logMensagem("⚡ **ENERGIA ESGOTADA!** Sistema de voo desativado.");
+            document.getElementById('fly-status').style.display = 'none';
+            document.getElementById('ui-voo-status').innerText = 'Desativado';
+        }
+    } else {
+        // Recarrega quando não está voando
+        jogador.energiaVoo = Math.min(100, jogador.energiaVoo + 1);
+    }
+}
+
+// Atualiza energia periodicamente
+setInterval(() => {
+    consumirEnergiaVoo();
+    if (jogador.voando || temPowerArmor()) {
+        atualizarUI();
+    }
+}, 500);
+
+// ================= SISTEMA DE LOJA (Mantido igual) =================
 
 function gerarInventarioComerciante() {
     npcComerciante.inventario = [];
@@ -1174,6 +1076,7 @@ function calcularPrecoItem(item) {
     precoBase += statsTotal * 20;
     
     if (item.nivelReq) precoBase += item.nivelReq * 15;
+    if (item.permiteVoo) precoBase += 500; // Power Armors são mais caras
     
     return Math.floor(precoBase);
 }
@@ -1197,10 +1100,11 @@ function abrirLoja() {
     htmlBody += `<div style="max-height: 200px; overflow-y: auto; margin: 8px 0;">`;
     
     npcComerciante.inventario.forEach((item, index) => {
+        let extraInfo = item.permiteVoo ? ' ✈️' : '';
         htmlBody += `
             <div class="shop-item">
                 <div>
-                    <span class="${item.raridade}">${item.nome}</span>
+                    <span class="${item.raridade}">${item.nome}${extraInfo}</span>
                     <span style="font-size: 10px;">[Nív. ${item.nivelReq || 0}]</span>
                     <br>
                     <span style="font-size: 10px;">💰 ${item.preco} Caps</span>
@@ -1237,7 +1141,7 @@ function comprarItem(index) {
     npcComerciante.inventario.splice(index, 1);
     
     logMensagem(`🛒 Comprado: <span class="${item.raridade}">${item.nome}</span> por ${item.preco} Caps!`);
-    abrirLoja(); // Atualiza a loja
+    abrirLoja();
     atualizarUI();
 }
 
@@ -1301,8 +1205,9 @@ function moverPlayer(dx, dy) {
 
     let tileTarget = mapa[ny][nx];
 
-    if (tileTarget.obstaculo) {
-        logMensagem("🛑 Caminho bloqueado por destroços radiativos!");
+    // Se estiver voando, pode passar por obstáculos
+    if (!jogador.voando && tileTarget.obstaculo) {
+        logMensagem("🛑 Caminho bloqueado por destroços radiativos! Use uma Power Armor para voar sobre obstáculos.");
         return;
     }
 
@@ -1313,7 +1218,6 @@ function moverPlayer(dx, dy) {
     document.getElementById('ui-pos-y').innerText = ny;
     document.getElementById('ui-bioma-atual').innerText = biomasInfo[tileTarget.bioma].nome;
 
-    // Verifica se está no NPC
     if (nx === npcComerciante.x && ny === npcComerciante.y) {
         logMensagem("🏪 Pressione E para interagir com o Comerciante do Wasteland!");
     }
@@ -1324,7 +1228,7 @@ function moverPlayer(dx, dy) {
         iniciarEventoCombate(tileTarget, false);
     } else if (tileTarget.conteudo === 'boss') {
         iniciarEventoCombate(tileTarget, true);
-    } else if (Math.random() < 0.08) {
+    } else if (Math.random() < 0.06 && !jogador.voando) {
         iniciarEventoCombate(tileTarget, false);
     }
 
@@ -1339,13 +1243,18 @@ window.addEventListener('keydown', (e) => {
         return;
     }
     
+    if (e.key === 'f' || e.key === 'F') {
+        alternarVoo();
+        return;
+    }
+    
     if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') moverPlayer(0, -1);
     if (e.key === 's' || e.key === 'S' || e.key === 'ArrowDown') moverPlayer(0, 1);
     if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') moverPlayer(-1, 0);
     if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') moverPlayer(1, 0);
 });
 
-// ================= SISTEMA DE COMBATE COM ANIMAÇÕES =================
+// ================= SISTEMA DE COMBATE (Mantido com animações) =================
 
 function iniciarEventoBau(tile) {
     eventoAtual = 'bau';
@@ -1420,7 +1329,6 @@ function animarAtaqueJogador() {
     canvas.classList.add('shake-animation');
     setTimeout(() => canvas.classList.remove('shake-animation'), 300);
     
-    // Mostrar número de dano
     const combatDiv = document.getElementById('combat-animation');
     const damageNum = document.createElement('div');
     damageNum.className = 'damage-number';
@@ -1445,13 +1353,19 @@ function atacarInimigo() {
     const mob = eventoAtual.mob;
 
     let dano = Math.max(8, stats.dano + Math.floor(Math.random() * 8));
+    
+    // Bônus de dano se estiver voando
+    if (jogador.voando) {
+        dano = Math.floor(dano * 1.2);
+        logMensagem("✈️ **ATAQUE AÉREO!** +20% de dano!");
+    }
+    
     mob.hpAtual -= dano;
     eventoAtual.ultimoDano = dano;
     
-    // Animação de ataque
     animarAtaqueJogador();
     
-    logMensagem(`💥 Você disparou contra **${mob.nome}** causando **${dano}** de dano!`);
+    logMensagem(`💥 Você atacou **${mob.nome}** causando **${dano}** de dano!`);
 
     if (mob.hpAtual <= 0) {
         setTimeout(() => {
@@ -1487,12 +1401,16 @@ function atacarInimigo() {
         return;
     }
 
-    // Contra-ataque do Inimigo após delay
     setTimeout(() => {
         let danoRecebido = Math.max(2, mob.dano - stats.def);
+        
+        // Redução de dano se estiver voando
+        if (jogador.voando) {
+            danoRecebido = Math.floor(danoRecebido * 0.8);
+        }
+        
         jogador.hpAtual -= danoRecebido;
         
-        // Animação de dano
         animarDanoInimigo();
         
         logMensagem(`🛡️ **${mob.nome}** atacou você causando **${danoRecebido}** de dano.`);
@@ -1501,6 +1419,7 @@ function atacarInimigo() {
             logMensagem("☠️ **CRÍTICO: VOCÊ FOI DERROTADO!** Ressuscitado na base do Vault com HP restaurado.");
             jogador.hpAtual = jogador.hpMax;
             jogador.x = 2; jogador.y = 2;
+            jogador.voando = false;
             fecharModal();
             desenharMapa();
         }
@@ -1567,6 +1486,23 @@ function equiparItem(index) {
 
     if (antigo) jogador.mochila.push(antigo);
 
+    // Se equipou Power Armor, já ativa o voo
+    if (item.permiteVoo) {
+        document.getElementById('fly-status').style.display = 'block';
+        document.getElementById('energia-bar-container').style.display = 'block';
+        document.getElementById('energia-bar').style.display = 'block';
+        logMensagem(`🛡️ Equipado: **${item.nome}** - ✈️ Sistema de Voo Disponível! Pressione F para voar.`);
+    }
+    
+    // Se desequipou Power Armor, desativa voo
+    if (antigo && antigo.permiteVoo && !temPowerArmor()) {
+        jogador.voando = false;
+        document.getElementById('fly-status').style.display = 'none';
+        document.getElementById('energia-bar-container').style.display = 'none';
+        document.getElementById('energia-bar').style.display = 'none';
+        document.getElementById('ui-voo-status').innerText = 'Desativado';
+    }
+
     logMensagem(`🛡️ Equipado: **${item.nome}**.`);
     atualizarUI();
     desenharMapa();
@@ -1578,6 +1514,15 @@ function desequiparItem(slot) {
 
     jogador.equipados[slot] = null;
     jogador.mochila.push(item);
+    
+    if (item.permiteVoo) {
+        jogador.voando = false;
+        document.getElementById('fly-status').style.display = 'none';
+        document.getElementById('energia-bar-container').style.display = 'none';
+        document.getElementById('energia-bar').style.display = 'none';
+        document.getElementById('ui-voo-status').innerText = 'Desativado';
+    }
+    
     logMensagem(`📦 Desequipado: **${item.nome}**.`);
     atualizarUI();
     desenharMapa();
@@ -1589,6 +1534,7 @@ function checarLevelUp() {
         jogador.exp -= jogador.expProx;
         jogador.expProx = Math.floor(jogador.expProx * 1.6);
         jogador.hpAtual = jogador.hpMax;
+        jogador.energiaVoo = 100; // Recarrega energia ao upar
         logMensagem(`🌟 **LEVEL UP S.P.E.C.I.A.L.!** Você subiu para o Nível **${jogador.nivel}**! Todos os seus atributos subiram!`);
     }
 }
@@ -1613,7 +1559,7 @@ function atualizarPreview() {
     const ctx = canvas.getContext('2d');
     
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    desenharSpritePersonagem(ctx, canvas.width/2, canvas.height/2, 48, r, c, null);
+    desenharSpritePersonagem(ctx, canvas.width/2, canvas.height/2, 48, r, c, null, false);
 
     document.getElementById('desc-box').innerText = `${racas[r].desc}
 
@@ -1636,6 +1582,7 @@ function iniciarJogo() {
     desenharMapa();
     logMensagem("☢️ **PIP-BOY CONECTADO:** Explore os 4 biomas do Wasteland. Cuidado com os Chefes das crateras!");
     logMensagem("🏪 **DICA:** Visite o comerciante na posição (1,1) para comprar e vender itens!");
+    logMensagem("✈️ **DICA:** Equipe uma Power Armor (T-45, T-51b) para ativar o modo de voo! Pressione F para voar.");
 }
 
 function atualizarUI() {
@@ -1649,6 +1596,13 @@ function atualizarUI() {
 
     document.getElementById('ui-hp').style.width = Math.max(0, (jogador.hpAtual / jogador.hpMax) * 100) + '%';
     document.getElementById('ui-exp').style.width = Math.min(100, (jogador.exp / jogador.expProx) * 100) + '%';
+    
+    // Barra de energia do voo
+    if (temPowerArmor()) {
+        document.getElementById('energia-bar-container').style.display = 'block';
+        document.getElementById('energia-bar').style.display = 'block';
+        document.getElementById('ui-energia').style.width = jogador.energiaVoo + '%';
+    }
 
     document.getElementById('stat-for').innerText = stats.for;
     document.getElementById('stat-agi').innerText = stats.agi;
@@ -1669,7 +1623,8 @@ function atualizarUI() {
         const item = jogador.equipados[slot];
         if (item) {
             el.className = item.raridade;
-            el.innerHTML = `${item.nome} <button class="btn btn-danger" style="padding:0 3px; font-size:9px;" onclick="desequiparItem('${slot}')">X</button>`;
+            let extraIcon = item.permiteVoo ? ' ✈️' : '';
+            el.innerHTML = `${item.nome}${extraIcon} <button class="btn btn-danger" style="padding:0 3px; font-size:9px;" onclick="desequiparItem('${slot}')">X</button>`;
         } else {
             el.className = 'comum';
             el.innerText = 'Nenhum';
@@ -1681,10 +1636,11 @@ function atualizarUI() {
     jogador.mochila.forEach((item, index) => {
         let statsTxt = Object.entries(item.stats).map(([k, v]) => `+${v} ${k.toUpperCase()}`).join(', ');
         let nivelTxt = item.nivelReq ? `[Nív. ${item.nivelReq}]` : '';
+        let vooIcon = item.permiteVoo ? ' ✈️' : '';
         mochilaEl.innerHTML += `
             <div class="inventory-item">
                 <div>
-                    <strong class="${item.raridade}">${item.nome}</strong> (${item.slot}) ${nivelTxt}<br>
+                    <strong class="${item.raridade}">${item.nome}${vooIcon}</strong> (${item.slot}) ${nivelTxt}<br>
                     <span style="font-size:10px; color:#aaa;">${statsTxt} | ${item.hab || ''}</span>
                 </div>
                 <button class="btn btn-equip" onclick="equiparItem(${index})">EQUIPAR</button>
@@ -1697,6 +1653,55 @@ function logMensagem(msg) {
     const log = document.getElementById('log');
     log.innerHTML += `<div>${msg}</div>`;
     log.scrollTop = log.scrollHeight;
+}
+
+// Sprites dos inimigos (mesmo código anterior)
+function desenharSpriteInimigo(canvasId, tipo) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2;
+
+    ctx.save();
+    
+    function drawBlock(x, y, w, h, color) {
+        ctx.fillStyle = color;
+        ctx.fillRect(x, y, w, h);
+    }
+
+    // Sprites dos inimigos (código existente)
+    switch(tipo) {
+        case 'ghoul':
+            drawBlock(cx-20, cy-10, 40, 50, '#6b8e4e');
+            drawBlock(cx-18, cy-8, 36, 46, '#7a9e5c');
+            drawBlock(cx-12, cy-30, 24, 22, '#8b7355');
+            drawBlock(cx-10, cy-28, 20, 18, '#9b8365');
+            drawBlock(cx-8, cy-22, 6, 5, '#39ff14');
+            drawBlock(cx+2, cy-22, 6, 5, '#39ff14');
+            drawBlock(cx-7, cy-21, 4, 3, '#ffffff');
+            drawBlock(cx+3, cy-21, 4, 3, '#ffffff');
+            break;
+        case 'npc':
+            drawBlock(cx-20, cy-10, 40, 50, '#8B4513');
+            drawBlock(cx-18, cy-8, 36, 46, '#A0522D');
+            drawBlock(cx-12, cy-30, 24, 22, '#FFD700');
+            drawBlock(cx-10, cy-28, 20, 18, '#FFA500');
+            drawBlock(cx-6, cy-22, 4, 4, '#000000');
+            drawBlock(cx+2, cy-22, 4, 4, '#000000');
+            drawBlock(cx-25, cy+55, 50, 10, '#654321');
+            break;
+        case 'bau':
+            drawBlock(cx-30, cy-20, 60, 40, '#27ae60');
+            drawBlock(cx-28, cy-18, 56, 36, '#2ecc71');
+            drawBlock(cx-30, cy-8, 60, 6, '#f1c40f');
+            drawBlock(cx-8, cy-20, 16, 40, '#f1c40f');
+            break;
+    }
+    
+    ctx.restore();
 }
 
 // Inicializa Preview
