@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vault Explorer - V4</title>
+    <title>Vault Explorer - V5</title>
     <style>
         /* =========================================
            Estética Retro-Futurista (Pip-Boy Style)
@@ -22,20 +22,22 @@
         #menu h1 { font-size: 3rem; margin-bottom: 10px; }
         #menu p { font-size: 1.1rem; }
         .crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #39ff14; font-size: 24px; z-index: 9; }
+        .damage-overlay { position: absolute; top:0; left:0; width: 100%; height: 100%; background: rgba(255, 0, 0, 0.3); z-index: 15; pointer-events: none; opacity: 0; transition: opacity 0.2s; }
     </style>
 </head>
 <body>
 
     <div class="scanlines"></div>
     <div class="crosshair">+</div>
+    <div class="damage-overlay" id="damage-screen"></div>
     
     <div id="ui">
         <div id="hud">
-            <div>HP: 100 | RADS: 0 | STIMPAK: <span id="stimpak-count">0</span></div>
+            <div>HP: <span id="hp-count">100</span> | RADS: 0 | STIMPAK: <span id="stimpak-count">0</span></div>
             <div>ARMA: <span id="weapon-status">Pistola 10mm</span></div>
             <div>SUCATA: <span id="scrap-count">0</span> | ÁGUA: <span id="water-count">0</span></div>
         </div>
-        <div id="message-box">Encontre a porta amarela para sair do Refúgio. [E] Interagir | [1][2] Armas</div>
+        <div id="message-box">Encontre a porta amarela para sair. [E] Interagir | [MOUSE] Atirar</div>
     </div>
 
     <div id="inventory-overlay">
@@ -51,8 +53,7 @@
                 <strong>[INVENTÁRIO]</strong><br>
                 Sucata: <span id="inv-scrap">0</span><br>
                 Água: <span id="inv-water">0</span><br>
-                Stimpaks: <span id="inv-stimpak">0</span><br>
-                RadAway: <span id="inv-radaway">0</span>
+                Stimpaks (Uso: H): <span id="inv-stimpak">0</span>
             </div>
         </div>
         <div class="inv-footer">Pressione [I] para Fechar</div>
@@ -61,7 +62,7 @@
     <div id="menu">
         <h1>ROBCO INDUSTRIES</h1>
         <p>[ CLIQUE NA TELA PARA ENTRAR ]</p>
-        <p style="font-size: 0.9rem;">WASD: Mover | E: Interagir/Sair | I: Inventário | F: Lanterna | 1 e 2: Trocar Arma</p>
+        <p style="font-size: 0.9rem;">WASD: Mover | E: Interagir | Mouse Esq: Atirar | H: Curar | F: Lanterna | 1 e 2: Armas</p>
     </div>
 
     <script type="importmap">
@@ -95,8 +96,7 @@
         const ambientLight = new THREE.AmbientLight(0xffffff, 2.5);
         scene.add(ambientLight);
         
-        // Luz do Sol (Para o Ermo)
-        const directionalLight = new THREE.DirectionalLight(0xffaa55, 0); // Começa desligada no Refúgio
+        const directionalLight = new THREE.DirectionalLight(0xffaa55, 0);
         directionalLight.position.set(10, 20, 10);
         scene.add(directionalLight);
 
@@ -106,17 +106,18 @@
         flashlightTarget.position.set(0, 0, -1);
         camera.add(flashlightTarget);
         flashlight.target = flashlightTarget;
+        
+        // BUG CORRIGIDO: Adicionando a câmera na cena para as armas aparecerem!
         camera.add(flashlight);
-        let flashlightOn = true;
+        scene.add(camera);
 
         // =========================================
-        // Armas (Remodeladas para clareza)
+        // Armas e Combate
         // =========================================
         const weapons = new THREE.Group();
         camera.add(weapons);
-        weapons.position.set(0.3, -0.3, -0.6); // Posição padrão na tela
+        weapons.position.set(0.3, -0.3, -0.6); 
 
-        // 1. Pistola 10mm (Pequena e cinza escuro)
         const pistol = new THREE.Group();
         const pBody = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.15, 0.3), new THREE.MeshLambertMaterial({ color: 0x444444 }));
         const pHandle = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.2, 0.1), new THREE.MeshLambertMaterial({ color: 0x222222 }));
@@ -125,42 +126,57 @@
         pistol.add(pBody, pHandle);
         weapons.add(pistol);
 
-        // 2. Rifle a Laser (Maior, estrutura preta/amarela, cano neon brilhante)
         const laserRifle = new THREE.Group();
         const lBody = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.2, 0.6), new THREE.MeshLambertMaterial({ color: 0x222222 }));
-        
-        // Cano vermelho que "brilha" ignorando a luz (MeshBasicMaterial)
         const lBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.5, 8), new THREE.MeshBasicMaterial({ color: 0xff0000 }));
         lBarrel.rotation.x = Math.PI / 2;
         lBarrel.position.set(0, 0.05, -0.4);
-        
-        const lStock = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.25, 0.3), new THREE.MeshLambertMaterial({ color: 0x8b8000 })); // Coronha amarela
+        const lStock = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.25, 0.3), new THREE.MeshLambertMaterial({ color: 0x8b8000 })); 
         lStock.position.set(0, -0.1, 0.3);
-        
         laserRifle.add(lBody, lBarrel, lStock);
         laserRifle.visible = false; 
         weapons.add(laserRifle);
 
         let currentWeapon = 1;
         let hasLaserRifle = false;
+        let flashlightOn = true;
+        let playerHP = 100;
+        let lastDamageTime = 0;
 
-        // Lógica de Troca Totalmente Isolada
         function equipWeapon(id) {
             if (id === 1) {
-                pistol.visible = true;
-                laserRifle.visible = false;
-                currentWeapon = 1;
+                pistol.visible = true; laserRifle.visible = false; currentWeapon = 1;
                 document.getElementById('weapon-status').innerText = "Pistola 10mm";
             } else if (id === 2 && hasLaserRifle) {
-                pistol.visible = false;
-                laserRifle.visible = true;
-                currentWeapon = 2;
+                pistol.visible = false; laserRifle.visible = true; currentWeapon = 2;
                 document.getElementById('weapon-status').innerText = "Rifle a Laser";
             }
         }
 
+        // Raycaster para o sistema de tiro
+        const raycaster = new THREE.Raycaster();
+        
+        document.addEventListener('mousedown', (e) => {
+            if (controls.isLocked) {
+                // Animação simples de recuo (recoil)
+                weapons.position.z += 0.1;
+                setTimeout(() => weapons.position.z -= 0.1, 100);
+
+                // Checar acerto (Hitscan)
+                raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+                const intersects = raycaster.intersectObjects(mobs, true);
+                
+                if (intersects.length > 0) {
+                    const hitMob = intersects[0].object;
+                    environmentGroup.remove(hitMob);
+                    mobs = mobs.filter(m => m !== hitMob);
+                    updateMessage("Ameaça eliminada!");
+                }
+            }
+        });
+
         // =========================================
-        // Mapas e Geradores de Cenário
+        // Mapas, Casas e Mobs
         // =========================================
         let currentLevel = 'vault';
         const environmentGroup = new THREE.Group();
@@ -169,28 +185,23 @@
         const vaultWallMat = new THREE.MeshLambertMaterial({ color: 0x5a665a });
         const vaultFloorMat = new THREE.MeshLambertMaterial({ color: 0x2a2a2a });
         const doorMat = new THREE.MeshLambertMaterial({ color: 0xddaa00 }); 
-        const wastelandFloorMat = new THREE.MeshLambertMaterial({ color: 0xa67d3d }); // Chão do deserto
+        const wastelandFloorMat = new THREE.MeshLambertMaterial({ color: 0xa67d3d }); 
 
         let interactables = [];
         let items = [];
+        let mobs = [];
+        let inventory = { scrap: 0, water: 0, stimpak: 0 };
 
         function clearEnvironment() {
-            while(environmentGroup.children.length > 0){ 
-                environmentGroup.remove(environmentGroup.children[0]); 
-            }
-            interactables = [];
-            items = [];
+            while(environmentGroup.children.length > 0) environmentGroup.remove(environmentGroup.children[0]); 
+            interactables = []; items = []; mobs = [];
         }
-
-        // --- SISTEMA DE ITENS ---
-        let inventory = { scrap: 0, water: 0, stimpak: 0, radaway: 0 };
 
         function spawnItem(type, x, z) {
             let color, geo;
             if(type === 'scrap') { color = 0xaaaaaa; geo = new THREE.BoxGeometry(0.4, 0.4, 0.4); }
             else if (type === 'water') { color = 0x00aaff; geo = new THREE.CylinderGeometry(0.2, 0.2, 0.6, 8); }
             else if (type === 'stimpak') { color = 0xff0000; geo = new THREE.BoxGeometry(0.3, 0.5, 0.1); }
-            else if (type === 'radaway') { color = 0xffff00; geo = new THREE.BoxGeometry(0.4, 0.2, 0.3); }
             else if (type === 'laser_rifle') { color = 0xff0000; geo = new THREE.BoxGeometry(1.0, 0.2, 0.2); } 
 
             const item = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: color }));
@@ -213,7 +224,38 @@
             interactables.push(chestGroup);
         }
 
-        // --- REFÚGIO (Labirinto Fechado) ---
+        function spawnMob(x, z) {
+            const mobMat = new THREE.MeshLambertMaterial({ color: 0x00ff00 }); // Mutante verde
+            const mob = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 2, 8), mobMat);
+            mob.position.set(x, 1, z);
+            environmentGroup.add(mob);
+            mobs.push(mob);
+        }
+
+        // Função para construir uma casa em ruínas
+        function spawnRuinedHouse(x, z) {
+            const houseMat = new THREE.MeshLambertMaterial({ color: 0x665544 });
+            const roofMat = new THREE.MeshLambertMaterial({ color: 0x333333 });
+            
+            // Paredes (Esquerda, Direita, Fundo) - Deixa a frente aberta
+            const w1 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 3, 6), houseMat);
+            w1.position.set(x - 3, 1.5, z);
+            
+            const w2 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 3, 6), houseMat);
+            w2.position.set(x + 3, 1.5, z);
+            
+            const w3 = new THREE.Mesh(new THREE.BoxGeometry(6, 3, 0.5), houseMat);
+            w3.position.set(x, 1.5, z - 3);
+
+            // Teto (Quebrado)
+            const roof = new THREE.Mesh(new THREE.BoxGeometry(6.5, 0.5, 4), roofMat);
+            roof.position.set(x, 3.25, z - 1);
+            roof.rotation.x = -0.1; // Teto caindo
+
+            environmentGroup.add(w1, w2, w3, roof);
+        }
+
+        // --- REFÚGIO ---
         function initVault() {
             clearEnvironment();
             const floor = new THREE.Mesh(new THREE.PlaneGeometry(150, 150), vaultFloorMat);
@@ -255,71 +297,55 @@
             camera.position.set(0, 1.6, 8); 
         }
 
-        // --- ERMO POLIDO (Mundo Aberto) ---
+        // --- ERMO ---
         function initWasteland() {
             clearEnvironment();
             currentLevel = 'wasteland';
             
-            // Tempestade de Areia / Radiação
             scene.background = new THREE.Color(0xd27d2d); 
-            scene.fog = new THREE.FogExp2(0xd27d2d, 0.03); // Fog exponencial dá um efeito de mundo aberto melhor
-            
+            scene.fog = new THREE.FogExp2(0xd27d2d, 0.03); 
             ambientLight.intensity = 1.0; 
-            directionalLight.intensity = 2.0; // Liga o "sol" do deserto
+            directionalLight.intensity = 2.0;
 
-            // Chão enorme
             const floor = new THREE.Mesh(new THREE.PlaneGeometry(300, 300), wastelandFloorMat);
             floor.rotation.x = -Math.PI / 2;
             environmentGroup.add(floor);
 
-            // Gerador Aleatório de Cenário (Árvores Mortas e Ruínas)
-            const ruinMat = new THREE.MeshLambertMaterial({ color: 0x554433 }); // Tijolo sujo
-            const treeMat = new THREE.MeshLambertMaterial({ color: 0x3d2817 }); // Madeira queimada
-
-            for(let i = 0; i < 40; i++) {
-                const rx = (Math.random() - 0.5) * 150;
-                const rz = (Math.random() - 0.5) * 150;
-
-                // Não nascer estrutura muito perto do jogador
-                if(Math.abs(rx) < 10 && Math.abs(rz) < 10) continue; 
-
-                const isTree = Math.random() > 0.6;
-                
-                if (isTree) {
-                    // Tronco torto
-                    const treeHeight = 3 + Math.random() * 4;
-                    const tree = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.5, treeHeight, 5), treeMat);
-                    tree.position.set(rx, treeHeight/2, rz);
-                    tree.rotation.z = (Math.random() - 0.5) * 0.4;
-                    tree.rotation.x = (Math.random() - 0.5) * 0.4;
-                    environmentGroup.add(tree);
-                } else {
-                    // Ruínas de Blocos
-                    const width = 2 + Math.random() * 6;
-                    const height = 1 + Math.random() * 8;
-                    const depth = 2 + Math.random() * 6;
-                    const ruin = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), ruinMat);
-                    ruin.position.set(rx, height/2, rz);
-                    ruin.rotation.y = Math.random() * Math.PI;
-                    environmentGroup.add(ruin);
+            // Gerar Casas Abandonadas e Inimigos
+            for(let i = 0; i < 8; i++) {
+                const rx = (Math.random() - 0.5) * 100;
+                const rz = (Math.random() - 0.5) * 100;
+                if(Math.abs(rx) > 10 && Math.abs(rz) > 10) {
+                    spawnRuinedHouse(rx, rz);
+                    // Nasce um inimigo perto da casa
+                    if(Math.random() > 0.3) spawnMob(rx + 5, rz + 5);
+                    // Nasce um baú ou item na casa
+                    if(Math.random() > 0.5) spawnChest(rx, rz);
                 }
             }
+
+            // Árvores Mortas
+            const treeMat = new THREE.MeshLambertMaterial({ color: 0x3d2817 });
+            for(let i = 0; i < 30; i++) {
+                const rx = (Math.random() - 0.5) * 150;
+                const rz = (Math.random() - 0.5) * 150;
+                const tree = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.5, 4, 5), treeMat);
+                tree.position.set(rx, 2, rz);
+                tree.rotation.z = (Math.random() - 0.5) * 0.4;
+                environmentGroup.add(tree);
+            }
             
-            // Itens espalhados pelo Ermo
-            spawnItem('radaway', -10, -15);
             spawnItem('stimpak', 15, 5);
-            spawnItem('laser_rifle', 0, -15); // Rifle logo à frente
-            spawnChest(12, -20);
-            spawnChest(-20, 20);
+            spawnItem('laser_rifle', 0, -10); 
             
-            camera.position.set(0, 1.6, 0); // Nasce no centro do Ermo
-            updateMessage("Você saiu. O Ermo (Wasteland) está à sua frente.");
+            camera.position.set(0, 1.6, 0); 
+            updateMessage("Você entrou no Ermo. Cuidado com as ameaças.");
         }
 
-        initVault(); // Começa no Refúgio
+        initVault();
 
         // =========================================
-        // UI, Controles e Lógica
+        // UI, Controles e Interações
         // =========================================
         const controls = new PointerLockControls(camera, document.body);
         const menu = document.getElementById('menu');
@@ -337,6 +363,7 @@
         }
 
         function updateUI() {
+            document.getElementById('hp-count').innerText = playerHP;
             document.getElementById('scrap-count').innerText = inventory.scrap;
             document.getElementById('water-count').innerText = inventory.water;
             document.getElementById('stimpak-count').innerText = inventory.stimpak;
@@ -344,13 +371,30 @@
             document.getElementById('inv-scrap').innerText = inventory.scrap;
             document.getElementById('inv-water').innerText = inventory.water;
             document.getElementById('inv-stimpak').innerText = inventory.stimpak;
-            document.getElementById('inv-radaway').innerText = inventory.radaway;
             
-            if (hasLaserRifle) {
-                document.getElementById('inv-laser').innerText = "Rifle a Laser (Desbloqueado)";
-                document.getElementById('inv-laser').style.color = "#fff";
-            }
+            if (hasLaserRifle) document.getElementById('inv-laser').innerText = "Rifle a Laser (Desbloqueado)";
             document.getElementById('flashlight-status').innerText = flashlightOn ? "LIGADA" : "DESLIGADA";
+        }
+
+        function healPlayer() {
+            if(inventory.stimpak > 0 && playerHP < 100) {
+                inventory.stimpak--;
+                playerHP = Math.min(100, playerHP + 40);
+                updateUI();
+                updateMessage("Você usou um Stimpak. (+40 HP)");
+                
+                // Brilho verde de cura
+                document.getElementById('damage-screen').style.background = 'rgba(0, 255, 0, 0.3)';
+                document.getElementById('damage-screen').style.opacity = '1';
+                setTimeout(() => { 
+                    document.getElementById('damage-screen').style.opacity = '0'; 
+                    document.getElementById('damage-screen').style.background = 'rgba(255, 0, 0, 0.3)'; // volta pro vermelho
+                }, 300);
+            } else if (playerHP >= 100) {
+                updateMessage("Sua vida já está cheia.");
+            } else {
+                updateMessage("Sem Stimpaks!");
+            }
         }
 
         let moveF = false, moveB = false, moveL = false, moveR = false;
@@ -365,6 +409,7 @@
                 case 'KeyS': moveB = true; break;
                 case 'KeyD': moveR = true; break;
                 case 'KeyF': flashlightOn = !flashlightOn; flashlight.visible = flashlightOn; updateUI(); break;
+                case 'KeyH': healPlayer(); break;
                 case 'Digit1': equipWeapon(1); break;
                 case 'Digit2': equipWeapon(2); break;
                 case 'KeyI': case 'Tab': 
@@ -397,8 +442,7 @@
                         obj.userData.opened = true;
                         obj.userData.lidMesh.position.z -= 0.3;
                         obj.userData.lidMesh.rotation.x = -Math.PI / 4;
-                        inventory.scrap += 3;
-                        inventory.water += 1;
+                        inventory.scrap += 3; inventory.water += 1;
                         if(Math.random() > 0.5) inventory.stimpak += 1;
                         updateUI();
                         updateMessage("Baú aberto! Suprimentos coletados.");
@@ -407,6 +451,9 @@
             }
         }
 
+        // =========================================
+        // Loop Principal
+        // =========================================
         function animate() {
             requestAnimationFrame(animate);
             const time = performance.now();
@@ -414,6 +461,7 @@
             if (controls.isLocked) {
                 const delta = (time - prevTime) / 1000;
 
+                // Movimento
                 velocity.x -= velocity.x * 10.0 * delta;
                 velocity.z -= velocity.z * 10.0 * delta;
                 direction.z = Number(moveF) - Number(moveB);
@@ -427,23 +475,19 @@
                 controls.moveRight(-velocity.x * delta);
                 controls.moveForward(-velocity.z * delta);
 
-                if (moveF || moveB || moveL || moveR) {
-                    weapons.position.y = -0.3 + Math.sin(time * 0.012) * 0.015; // Bobbing
-                } else {
-                    weapons.position.y = -0.3;
-                }
+                if (moveF || moveB || moveL || moveR) weapons.position.y = -0.3 + Math.sin(time * 0.012) * 0.015;
+                else weapons.position.y = -0.3;
 
+                // Coletar itens
                 for (let i = items.length - 1; i >= 0; i--) {
                     const item = items[i];
                     item.rotation.y += 0.02;
                     if (camera.position.distanceTo(item.position) < 1.8) {
                         environmentGroup.remove(item);
                         const type = item.userData.type;
-                        
                         if (type === 'laser_rifle') {
-                            hasLaserRifle = true;
-                            equipWeapon(2); // Equipa automaticamente ao pegar
-                            updateMessage("Rifle a Laser adquirido! [1] e [2] para trocar.");
+                            hasLaserRifle = true; equipWeapon(2);
+                            updateMessage("Rifle a Laser adquirido!");
                         } else {
                             inventory[type]++;
                             updateMessage(`Você coletou: ${type.toUpperCase()}`);
@@ -452,6 +496,34 @@
                         updateUI();
                     }
                 }
+
+                // Inteligência dos Mobs (Andar e Atacar)
+                mobs.forEach(mob => {
+                    const dist = camera.position.distanceTo(mob.position);
+                    
+                    // Se estiver perto o suficiente (Agro Range), o mob anda na direção do player
+                    if(dist < 20 && dist > 1.2) {
+                        const mobSpeed = 2 * delta;
+                        const directionToPlayer = new THREE.Vector3().subVectors(camera.position, mob.position).normalize();
+                        mob.position.x += directionToPlayer.x * mobSpeed;
+                        mob.position.z += directionToPlayer.z * mobSpeed;
+                        mob.rotation.y = Math.atan2(directionToPlayer.x, directionToPlayer.z); // Olha pro player
+                    }
+                    
+                    // Dano no Player se encostar
+                    if(dist <= 1.5 && time - lastDamageTime > 1000) {
+                        playerHP -= 15;
+                        lastDamageTime = time;
+                        updateUI();
+                        document.getElementById('damage-screen').style.opacity = '1';
+                        setTimeout(() => document.getElementById('damage-screen').style.opacity = '0', 200);
+                        
+                        if(playerHP <= 0) {
+                            alert("VOCÊ MORREU! O Ermo foi duro demais com você. Recarregue a página para tentar de novo.");
+                            document.location.reload();
+                        }
+                    }
+                });
             }
 
             prevTime = time;
