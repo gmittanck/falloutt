@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vault Explorer - V11 Fixed</title>
+    <title>Vault Explorer - V12 Fixed Movement</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #87CEEB; font-family: 'Courier New', Courier, monospace; color: #39ff14; user-select: none; }
         .scanlines { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.15) 50%), linear-gradient(90deg, rgba(255,0,0,0.04), rgba(0,255,0,0.01), rgba(0,0,255,0.04)); background-size: 100% 4px, 3px 100%; pointer-events: none; z-index: 11; opacity: 0.2; }
@@ -76,7 +76,7 @@
     </div>
 
     <div id="menu">
-        <h1>ROBCO INDUSTRIES - V11</h1>
+        <h1>ROBCO INDUSTRIES - V12</h1>
         <p>[ CLIQUE NA TELA PARA JOGAR ]</p>
         <p style="font-size: 0.9rem;">WASD: Mover | E: Interagir | Mouse: Atirar | H: Curar | 1-5: Trocar Armas | I: Inventário | V: Câmera</p>
     </div>
@@ -102,8 +102,7 @@
         scene.fog = new THREE.Fog(0xB0C4DE, 30, 200);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(0, 3, 5);
-
+        
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.shadowMap.enabled = true;
@@ -131,27 +130,38 @@
         scene.add(fillLight);
 
         // =========================================
+        // LIMITES DO MAPA
+        // =========================================
+        const MAP_SIZE = 140; // Tamanho máximo do mapa
+        const MAP_BOUNDARY = MAP_SIZE / 2;
+
+        function clampPosition(position) {
+            position.x = Math.max(-MAP_BOUNDARY, Math.min(MAP_BOUNDARY, position.x));
+            position.z = Math.max(-MAP_BOUNDARY, Math.min(MAP_BOUNDARY, position.z));
+            position.y = 0; // Sempre no chão
+            return position;
+        }
+
+        // =========================================
         // SISTEMA DE CÂMERA CORRIGIDO
         // =========================================
         let isThirdPerson = true;
         const thirdPersonDistance = 4;
         const thirdPersonHeight = 2;
         
-        // MODELO DO JOGADOR MAIS HUMANO E BONITO
+        // MODELO DO JOGADOR SIMPLIFICADO MAS BONITO
         const playerModel = new THREE.Group();
         
-        // Tronco (mais anatômico)
+        // Tronco
         const torsoGroup = new THREE.Group();
         
-        // Peito
         const chest = new THREE.Mesh(
             new THREE.BoxGeometry(0.5, 0.7, 0.35),
-            new THREE.MeshStandardMaterial({ color: 0x2c3e50, roughness: 0.4 }) // Azul escuro
+            new THREE.MeshStandardMaterial({ color: 0x2c3e50, roughness: 0.4 })
         );
         chest.position.y = 1.1;
         chest.castShadow = true;
         
-        // Barriga
         const belly = new THREE.Mesh(
             new THREE.BoxGeometry(0.45, 0.4, 0.3),
             new THREE.MeshStandardMaterial({ color: 0x34495e, roughness: 0.4 })
@@ -159,7 +169,6 @@
         belly.position.y = 0.65;
         belly.castShadow = true;
         
-        // Cintura (cinto)
         const belt = new THREE.Mesh(
             new THREE.BoxGeometry(0.52, 0.08, 0.37),
             new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.6, metalness: 0.5 })
@@ -169,10 +178,9 @@
         torsoGroup.add(chest, belly, belt);
         playerModel.add(torsoGroup);
 
-        // Cabeça mais detalhada
+        // Cabeça
         const headGroup = new THREE.Group();
         
-        // Crânio
         const skull = new THREE.Mesh(
             new THREE.SphereGeometry(0.2, 16, 16),
             new THREE.MeshStandardMaterial({ color: 0xffcc99, roughness: 0.3 })
@@ -181,14 +189,6 @@
         skull.position.y = 1.7;
         skull.castShadow = true;
         
-        // Queixo
-        const chin = new THREE.Mesh(
-            new THREE.BoxGeometry(0.18, 0.1, 0.12),
-            new THREE.MeshStandardMaterial({ color: 0xffcc99, roughness: 0.3 })
-        );
-        chin.position.set(0, 1.58, 0.08);
-        
-        // Olhos
         const eyeL = new THREE.Mesh(
             new THREE.SphereGeometry(0.04, 8, 8),
             new THREE.MeshBasicMaterial({ color: 0xffffff })
@@ -213,14 +213,6 @@
         );
         pupilR.position.set(0.07, 1.73, -0.18);
         
-        // Boca
-        const mouth = new THREE.Mesh(
-            new THREE.BoxGeometry(0.1, 0.02, 0.02),
-            new THREE.MeshBasicMaterial({ color: 0x000000 })
-        );
-        mouth.position.set(0, 1.62, -0.16);
-        
-        // Cabelo
         const hair = new THREE.Mesh(
             new THREE.SphereGeometry(0.21, 8, 8),
             new THREE.MeshStandardMaterial({ color: 0x4a3728, roughness: 0.7 })
@@ -229,11 +221,10 @@
         hair.position.y = 1.82;
         hair.castShadow = true;
         
-        headGroup.add(skull, chin, eyeL, pupilL, eyeR, pupilR, mouth, hair);
+        headGroup.add(skull, eyeL, pupilL, eyeR, pupilR, hair);
         playerModel.add(headGroup);
 
-        // Braços mais humanos
-        // Braço esquerdo
+        // Braços
         const leftArmGroup = new THREE.Group();
         leftArmGroup.position.set(-0.32, 1.4, 0);
         
@@ -251,16 +242,10 @@
         leftForearm.position.y = -0.75;
         leftForearm.castShadow = true;
         
-        const leftHand = new THREE.Mesh(
-            new THREE.SphereGeometry(0.06, 8, 8),
-            new THREE.MeshStandardMaterial({ color: 0xffcc99, roughness: 0.3 })
-        );
-        leftHand.position.y = -1.05;
-        
-        leftArmGroup.add(leftUpperArm, leftForearm, leftHand);
+        leftArmGroup.add(leftUpperArm, leftForearm);
         playerModel.add(leftArmGroup);
 
-        // Braço direito (segurando arma)
+        // Braço direito com arma
         const rightArmGroup = new THREE.Group();
         rightArmGroup.position.set(0.32, 1.4, 0);
         rightArmGroup.rotation.z = -0.5;
@@ -279,24 +264,16 @@
         rightForearm.position.set(0.1, -0.75, 0.3);
         rightForearm.castShadow = true;
         
-        const rightHand = new THREE.Mesh(
-            new THREE.SphereGeometry(0.06, 8, 8),
-            new THREE.MeshStandardMaterial({ color: 0xffcc99, roughness: 0.3 })
-        );
-        rightHand.position.set(0.15, -1.05, 0.5);
-        
-        // Arma na mão direita
         const handGun = new THREE.Mesh(
             new THREE.BoxGeometry(0.06, 0.08, 0.25),
             new THREE.MeshStandardMaterial({ color: 0x555555, metalness: 0.8, roughness: 0.2 })
         );
         handGun.position.set(0.15, -1.05, 0.7);
         
-        rightArmGroup.add(rightUpperArm, rightForearm, rightHand, handGun);
+        rightArmGroup.add(rightUpperArm, rightForearm, handGun);
         playerModel.add(rightArmGroup);
 
         // Pernas
-        // Perna esquerda
         const leftLegGroup = new THREE.Group();
         leftLegGroup.position.set(-0.15, 0.4, 0);
         
@@ -314,16 +291,9 @@
         leftCalf.position.y = -0.75;
         leftCalf.castShadow = true;
         
-        const leftFoot = new THREE.Mesh(
-            new THREE.BoxGeometry(0.08, 0.08, 0.18),
-            new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.6 })
-        );
-        leftFoot.position.set(0, -1.02, 0.08);
-        
-        leftLegGroup.add(leftThigh, leftCalf, leftFoot);
+        leftLegGroup.add(leftThigh, leftCalf);
         playerModel.add(leftLegGroup);
 
-        // Perna direita
         const rightLegGroup = new THREE.Group();
         rightLegGroup.position.set(0.15, 0.4, 0);
         
@@ -341,16 +311,9 @@
         rightCalf.position.y = -0.75;
         rightCalf.castShadow = true;
         
-        const rightFoot = new THREE.Mesh(
-            new THREE.BoxGeometry(0.08, 0.08, 0.18),
-            new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.6 })
-        );
-        rightFoot.position.set(0, -1.02, 0.08);
-        
-        rightLegGroup.add(rightThigh, rightCalf, rightFoot);
+        rightLegGroup.add(rightThigh, rightCalf);
         playerModel.add(rightLegGroup);
 
-        // Mochila nas costas
         const backpack = new THREE.Mesh(
             new THREE.BoxGeometry(0.35, 0.5, 0.2),
             new THREE.MeshStandardMaterial({ color: 0x27ae60, roughness: 0.6 })
@@ -359,8 +322,6 @@
         backpack.castShadow = true;
         playerModel.add(backpack);
 
-        // Altura total do modelo ajustada
-        playerModel.position.y = 0;
         playerModel.castShadow = true;
         playerModel.receiveShadow = true;
         scene.add(playerModel);
@@ -377,7 +338,7 @@
                 );
                 
                 const targetPos = playerModel.position.clone();
-                camera.position.lerp(targetPos.clone().add(cameraOffset), 0.1);
+                camera.position.copy(targetPos.clone().add(cameraOffset));
                 
                 const lookTarget = targetPos.clone();
                 lookTarget.y += 1.4;
@@ -396,7 +357,7 @@
         }
 
         // =========================================
-        // Sistema de Armas (mantido igual)
+        // Sistema de Armas
         // =========================================
         const weapons = new THREE.Group();
         camera.add(weapons);
@@ -485,20 +446,15 @@
 
         function shootAnimation() {
             const weaponConfig = weaponConfigs[currentWeapon];
-            
             weapons.position.z += weaponConfig.recoil;
             weapons.position.y -= weaponConfig.recoil * 0.5;
-            
             setTimeout(() => {
                 weapons.position.z -= weaponConfig.recoil;
                 weapons.position.y += weaponConfig.recoil * 0.5;
             }, 100);
-            
             const muzzleFlash = document.getElementById('muzzle-flash');
             muzzleFlash.style.opacity = '1';
-            setTimeout(() => {
-                muzzleFlash.style.opacity = '0';
-            }, 50);
+            setTimeout(() => { muzzleFlash.style.opacity = '0'; }, 50);
         }
 
         function equipWeapon(id) {
@@ -516,12 +472,7 @@
 
         function unlockWeapon(id) {
             unlockedWeapons[id] = true;
-            const invElements = {
-                2: 'inv-shotgun',
-                3: 'inv-laser',
-                4: 'inv-plasma',
-                5: 'inv-minigun'
-            };
+            const invElements = { 2: 'inv-shotgun', 3: 'inv-laser', 4: 'inv-plasma', 5: 'inv-minigun' };
             if (invElements[id]) {
                 document.getElementById(invElements[id]).innerText = `${weaponConfigs[id].name} (Desbloqueado)`;
             }
@@ -533,10 +484,8 @@
             if (controls.isLocked) {
                 const currentTime = performance.now();
                 const weaponConfig = weaponConfigs[currentWeapon];
-                
                 if (currentTime - lastFireTime < weaponConfig.fireRate) return;
                 lastFireTime = currentTime;
-                
                 shootAnimation();
                 
                 const ammoType = weaponConfig.ammoType;
@@ -544,7 +493,6 @@
                     updateMessage("Sem munição! Use pistola (1) ou encontre munição.");
                     return;
                 }
-
                 if (ammoType !== 'pistol') {
                     ammo[ammoType]--;
                     document.getElementById('ammo-count').innerText = ammo[ammoType];
@@ -560,8 +508,7 @@
                     }
                     
                     if (hitObject.userData && hitObject.userData.hp !== undefined) {
-                        const damage = weaponConfig.damage;
-                        hitObject.userData.hp -= damage;
+                        hitObject.userData.hp -= weaponConfig.damage;
                         
                         hitObject.children.forEach(child => {
                             if (child.material && child.material.emissive) {
@@ -585,14 +532,11 @@
                                     child.material.opacity = 0.5;
                                 }
                             });
-                            
                             setTimeout(() => {
                                 environmentGroup.remove(hitObject);
                                 mobs = mobs.filter(m => m !== hitObject);
                             }, 200);
-                            
                             updateMessage(`${weaponConfig.name} destruiu o inimigo!`);
-                            
                             if(Math.random() > 0.7) spawnItem('scrap', hitObject.position.x, hitObject.position.z);
                             if(Math.random() > 0.85) spawnItem('ammo_pack', hitObject.position.x, hitObject.position.z);
                             if(Math.random() > 0.9) spawnItem('stimpak', hitObject.position.x, hitObject.position.z);
@@ -610,8 +554,7 @@
             const tracerGeo = new THREE.CylinderGeometry(0.02, 0.02, 3, 4);
             const tracerMat = new THREE.MeshBasicMaterial({ 
                 color: currentWeapon === 3 ? 0xff0000 : 0x00ff44,
-                transparent: true,
-                opacity: 0.8
+                transparent: true, opacity: 0.8
             });
             const tracer = new THREE.Mesh(tracerGeo, tracerMat);
             tracer.position.copy(camera.position);
@@ -674,15 +617,7 @@
                 case 'boots': color = 0x8B4513; geo = new THREE.BoxGeometry(0.2, 0.3, 0.4); break;
                 case 'glove': color = 0xFFD700; geo = new THREE.BoxGeometry(0.2, 0.3, 0.1); break;
             }
-
-            const material = new THREE.MeshStandardMaterial({ 
-                color: color, 
-                emissive: emissive,
-                emissiveIntensity: emissiveIntensity,
-                metalness: 0.3,
-                roughness: 0.5
-            });
-            
+            const material = new THREE.MeshStandardMaterial({ color: color, emissive: emissive, emissiveIntensity: emissiveIntensity, metalness: 0.3, roughness: 0.5 });
             const item = new THREE.Mesh(geo, material);
             item.position.set(x, 0.4, z);
             item.userData = { type: type };
@@ -710,137 +645,72 @@
 
         function createMobSprite(type) {
             const mobGroup = new THREE.Group();
-            
             switch(type) {
                 case 'normal':
-                    const nBody = new THREE.Mesh(
-                        new THREE.CylinderGeometry(0.4, 0.5, 1.5, 6),
-                        new THREE.MeshStandardMaterial({ color: 0x44ff44, emissive: 0x114411, emissiveIntensity: 0.3, roughness: 0.4 })
-                    );
+                    const nBody = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.5, 1.5, 6), new THREE.MeshStandardMaterial({ color: 0x44ff44, emissive: 0x114411, emissiveIntensity: 0.3, roughness: 0.4 }));
                     nBody.castShadow = true;
-                    const nHead = new THREE.Mesh(
-                        new THREE.SphereGeometry(0.3, 6, 6),
-                        new THREE.MeshStandardMaterial({ color: 0x66ff66, emissive: 0x224422, emissiveIntensity: 0.4 })
-                    );
+                    const nHead = new THREE.Mesh(new THREE.SphereGeometry(0.3, 6, 6), new THREE.MeshStandardMaterial({ color: 0x66ff66, emissive: 0x224422, emissiveIntensity: 0.4 }));
                     nHead.position.y = 1.0;
                     nHead.castShadow = true;
-                    
-                    const nEyeL = new THREE.Mesh(
-                        new THREE.SphereGeometry(0.06, 4, 4),
-                        new THREE.MeshBasicMaterial({ color: 0xff0000 })
-                    );
+                    const nEyeL = new THREE.Mesh(new THREE.SphereGeometry(0.06, 4, 4), new THREE.MeshBasicMaterial({ color: 0xff0000 }));
                     nEyeL.position.set(-0.1, 1.05, -0.25);
-                    
-                    const nEyeR = new THREE.Mesh(
-                        new THREE.SphereGeometry(0.06, 4, 4),
-                        new THREE.MeshBasicMaterial({ color: 0xff0000 })
-                    );
+                    const nEyeR = new THREE.Mesh(new THREE.SphereGeometry(0.06, 4, 4), new THREE.MeshBasicMaterial({ color: 0xff0000 }));
                     nEyeR.position.set(0.1, 1.05, -0.25);
-                    
                     mobGroup.add(nBody, nHead, nEyeL, nEyeR);
                     mobGroup.userData = { type: 'normal', hp: 2, speed: 0.06, originalColor: 0x44ff44 };
                     break;
-                    
                 case 'strong':
-                    const sBody = new THREE.Mesh(
-                        new THREE.CylinderGeometry(0.6, 0.7, 2.0, 8),
-                        new THREE.MeshStandardMaterial({ color: 0xff4444, emissive: 0x441111, emissiveIntensity: 0.2, roughness: 0.5 })
-                    );
+                    const sBody = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.7, 2.0, 8), new THREE.MeshStandardMaterial({ color: 0xff4444, emissive: 0x441111, emissiveIntensity: 0.2, roughness: 0.5 }));
                     sBody.castShadow = true;
-                    const sHead = new THREE.Mesh(
-                        new THREE.SphereGeometry(0.35, 8, 8),
-                        new THREE.MeshStandardMaterial({ color: 0xff6666, emissive: 0x442222, emissiveIntensity: 0.3 })
-                    );
+                    const sHead = new THREE.Mesh(new THREE.SphereGeometry(0.35, 8, 8), new THREE.MeshStandardMaterial({ color: 0xff6666, emissive: 0x442222, emissiveIntensity: 0.3 }));
                     sHead.position.y = 1.3;
                     sHead.castShadow = true;
-                    
-                    const hornL = new THREE.Mesh(
-                        new THREE.ConeGeometry(0.08, 0.3, 4),
-                        new THREE.MeshStandardMaterial({ color: 0x8B4513 })
-                    );
+                    const hornL = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.3, 4), new THREE.MeshStandardMaterial({ color: 0x8B4513 }));
                     hornL.position.set(-0.2, 1.6, 0);
                     hornL.rotation.z = -0.3;
-                    
-                    const hornR = new THREE.Mesh(
-                        new THREE.ConeGeometry(0.08, 0.3, 4),
-                        new THREE.MeshStandardMaterial({ color: 0x8B4513 })
-                    );
+                    const hornR = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.3, 4), new THREE.MeshStandardMaterial({ color: 0x8B4513 }));
                     hornR.position.set(0.2, 1.6, 0);
                     hornR.rotation.z = 0.3;
-                    
                     mobGroup.add(sBody, sHead, hornL, hornR);
                     mobGroup.userData = { type: 'strong', hp: 6, speed: 0.04, originalColor: 0xff4444 };
                     break;
-                    
                 case 'fast':
-                    const fBody = new THREE.Mesh(
-                        new THREE.CylinderGeometry(0.3, 0.35, 1.2, 6),
-                        new THREE.MeshStandardMaterial({ color: 0xffff00, emissive: 0x444400, emissiveIntensity: 0.4, roughness: 0.3 })
-                    );
+                    const fBody = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.35, 1.2, 6), new THREE.MeshStandardMaterial({ color: 0xffff00, emissive: 0x444400, emissiveIntensity: 0.4, roughness: 0.3 }));
                     fBody.castShadow = true;
-                    const fHead = new THREE.Mesh(
-                        new THREE.SphereGeometry(0.25, 6, 6),
-                        new THREE.MeshStandardMaterial({ color: 0xffff44, emissive: 0x444400, emissiveIntensity: 0.5 })
-                    );
+                    const fHead = new THREE.Mesh(new THREE.SphereGeometry(0.25, 6, 6), new THREE.MeshStandardMaterial({ color: 0xffff44, emissive: 0x444400, emissiveIntensity: 0.5 }));
                     fHead.position.y = 0.8;
                     fHead.castShadow = true;
-                    
-                    const antL = new THREE.Mesh(
-                        new THREE.CylinderGeometry(0.01, 0.01, 0.2, 4),
-                        new THREE.MeshBasicMaterial({ color: 0xffff00 })
-                    );
+                    const antL = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.2, 4), new THREE.MeshBasicMaterial({ color: 0xffff00 }));
                     antL.position.set(-0.1, 1.05, 0);
-                    
-                    const antR = new THREE.Mesh(
-                        new THREE.CylinderGeometry(0.01, 0.01, 0.2, 4),
-                        new THREE.MeshBasicMaterial({ color: 0xffff00 })
-                    );
+                    const antR = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.2, 4), new THREE.MeshBasicMaterial({ color: 0xffff00 }));
                     antR.position.set(0.1, 1.05, 0);
-                    
                     mobGroup.add(fBody, fHead, antL, antR);
                     mobGroup.userData = { type: 'fast', hp: 3, speed: 0.12, originalColor: 0xffff00 };
                     break;
-                    
                 case 'boss':
-                    const bBody = new THREE.Mesh(
-                        new THREE.CylinderGeometry(0.8, 0.9, 2.5, 8),
-                        new THREE.MeshStandardMaterial({ color: 0xff00ff, emissive: 0x440044, emissiveIntensity: 0.3, roughness: 0.4 })
-                    );
+                    const bBody = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.9, 2.5, 8), new THREE.MeshStandardMaterial({ color: 0xff00ff, emissive: 0x440044, emissiveIntensity: 0.3, roughness: 0.4 }));
                     bBody.castShadow = true;
-                    const bHead = new THREE.Mesh(
-                        new THREE.SphereGeometry(0.45, 8, 8),
-                        new THREE.MeshStandardMaterial({ color: 0xff44ff, emissive: 0x440044, emissiveIntensity: 0.4 })
-                    );
+                    const bHead = new THREE.Mesh(new THREE.SphereGeometry(0.45, 8, 8), new THREE.MeshStandardMaterial({ color: 0xff44ff, emissive: 0x440044, emissiveIntensity: 0.4 }));
                     bHead.position.y = 1.6;
                     bHead.castShadow = true;
-                    
                     for(let i = 0; i < 8; i++) {
-                        const spike = new THREE.Mesh(
-                            new THREE.ConeGeometry(0.08, 0.4, 4),
-                            new THREE.MeshStandardMaterial({ color: 0x880088, emissive: 0x440044, emissiveIntensity: 0.5 })
-                        );
+                        const spike = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.4, 4), new THREE.MeshStandardMaterial({ color: 0x880088, emissive: 0x440044, emissiveIntensity: 0.5 }));
                         const angle = (i / 8) * Math.PI * 2;
                         spike.position.set(Math.cos(angle) * 0.4, 1.9, Math.sin(angle) * 0.4);
                         spike.rotation.z = Math.cos(angle) * 0.3;
                         spike.rotation.x = Math.sin(angle) * 0.3;
                         mobGroup.add(spike);
                     }
-                    
                     for(let i = 0; i < 4; i++) {
-                        const eye = new THREE.Mesh(
-                            new THREE.SphereGeometry(0.05, 4, 4),
-                            new THREE.MeshBasicMaterial({ color: 0xffffff })
-                        );
+                        const eye = new THREE.Mesh(new THREE.SphereGeometry(0.05, 4, 4), new THREE.MeshBasicMaterial({ color: 0xffffff }));
                         const angle = (i / 4) * Math.PI * 2 + Math.PI / 4;
                         eye.position.set(Math.cos(angle) * 0.2, 1.65, Math.sin(angle) * 0.2);
                         mobGroup.add(eye);
                     }
-                    
                     mobGroup.add(bBody, bHead);
                     mobGroup.userData = { type: 'boss', hp: 20, speed: 0.03, originalColor: 0xff00ff };
                     break;
             }
-            
             mobGroup.children.forEach(child => {
                 if (child.material && child.material.emissive) {
                     child.userData = child.userData || {};
@@ -848,7 +718,6 @@
                     child.userData.originalEmissiveIntensity = child.material.emissiveIntensity;
                 }
             });
-            
             return mobGroup;
         }
 
@@ -862,40 +731,26 @@
         function spawnAbandonedHouse(x, z) {
             const group = new THREE.Group();
             const wallMat = new THREE.MeshStandardMaterial({ color: 0x8B7355, roughness: 0.9 });
-            const damagedWallMat = new THREE.MeshStandardMaterial({ color: 0x6B5345, roughness: 0.9 });
-            
             const frontWall = new THREE.Mesh(new THREE.BoxGeometry(6, 3, 0.3), wallMat);
             frontWall.position.set(x, 1.5, z - 3);
-            frontWall.castShadow = true;
-            frontWall.receiveShadow = true;
-            
+            frontWall.castShadow = true; frontWall.receiveShadow = true;
             const backWall = new THREE.Mesh(new THREE.BoxGeometry(6, 3, 0.3), wallMat);
             backWall.position.set(x, 1.5, z + 3);
-            backWall.castShadow = true;
-            backWall.receiveShadow = true;
-            
+            backWall.castShadow = true; backWall.receiveShadow = true;
             const leftWall = new THREE.Mesh(new THREE.BoxGeometry(0.3, 3, 6), wallMat);
             leftWall.position.set(x - 3, 1.5, z);
             leftWall.castShadow = true;
-            
-            const rightWall = new THREE.Mesh(new THREE.BoxGeometry(0.3, 3, 6), damagedWallMat);
-            rightWall.position.set(x + 3, 1.5, z);
-            rightWall.scale.y = 0.6;
-            
             const roofMat = new THREE.MeshStandardMaterial({ color: 0x654321, roughness: 0.8 });
             const roofLeft = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.2, 6.5), roofMat);
             roofLeft.position.set(x - 1.5, 3.2, z);
             roofLeft.rotation.z = 0.3;
             roofLeft.castShadow = true;
-            
             const roofRight = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.2, 6.5), roofMat);
             roofRight.position.set(x + 1.5, 3.2, z);
             roofRight.rotation.z = -0.3;
             roofRight.castShadow = true;
-            
-            group.add(frontWall, backWall, leftWall, rightWall, roofLeft, roofRight);
+            group.add(frontWall, backWall, leftWall, roofLeft, roofRight);
             environmentGroup.add(group);
-            
             if(Math.random() > 0.4) spawnItem('scrap', x, z);
             if(Math.random() > 0.7) spawnItem('ammo_pack', x + 1, z);
         }
@@ -903,20 +758,15 @@
         function spawnRuinedStore(x, z) {
             const group = new THREE.Group();
             const wallMat = new THREE.MeshStandardMaterial({ color: 0x999999, roughness: 0.7 });
-            
             const wall1 = new THREE.Mesh(new THREE.BoxGeometry(8, 3, 0.3), wallMat);
             wall1.position.set(x, 1.5, z - 4);
             wall1.castShadow = true;
-            
             const wall2 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 3, 8), wallMat);
             wall2.position.set(x - 4, 1.5, z);
-            
             const wall3 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 3, 8), wallMat);
             wall3.position.set(x + 4, 1.5, z);
-            
             group.add(wall1, wall2, wall3);
             environmentGroup.add(group);
-            
             spawnItem('scrap', x, z);
             spawnItem('water', x + 1, z + 1);
             if(Math.random() > 0.6) spawnItem('ammo_pack', x - 1, z);
@@ -928,64 +778,45 @@
             const building = new THREE.Mesh(new THREE.BoxGeometry(5, 3, 4), buildingMat);
             building.position.set(x, 1.5, z);
             building.castShadow = true;
-            
-            const roof = new THREE.Mesh(
-                new THREE.BoxGeometry(8, 0.3, 6),
-                new THREE.MeshStandardMaterial({ color: 0xFF4444, roughness: 0.7 })
-            );
+            const roof = new THREE.Mesh(new THREE.BoxGeometry(8, 0.3, 6), new THREE.MeshStandardMaterial({ color: 0xFF4444, roughness: 0.7 }));
             roof.position.set(x, 3.5, z);
             roof.castShadow = true;
-            
             group.add(building, roof);
             environmentGroup.add(group);
-            
             if(Math.random() > 0.5) spawnItem('water', x + 2, z + 2);
             if(Math.random() > 0.7) spawnItem('scrap', x - 2, z - 1);
         }
 
         function spawnDestroyedCar(x, z) {
             const car = new THREE.Group();
-            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.6, metalness: 0.4 });
-            const body = new THREE.Mesh(new THREE.BoxGeometry(2, 0.6, 4), bodyMat);
+            const body = new THREE.Mesh(new THREE.BoxGeometry(2, 0.6, 4), new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.6, metalness: 0.4 }));
             body.position.y = 0.4;
             body.castShadow = true;
-            
-            const cabinMat = new THREE.MeshStandardMaterial({ color: 0x666666, roughness: 0.5, metalness: 0.3 });
-            const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.5, 1.5), cabinMat);
+            const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.5, 1.5), new THREE.MeshStandardMaterial({ color: 0x666666, roughness: 0.5, metalness: 0.3 }));
             cabin.position.set(0, 0.9, -0.5);
             cabin.castShadow = true;
-            
             car.add(body, cabin);
             car.position.set(x, 0, z);
             car.rotation.y = Math.random() * Math.PI * 2;
             environmentGroup.add(car);
-            
             if(Math.random() > 0.6) spawnItem('scrap', x, z);
         }
 
         function spawnWatchtower(x, z) {
             const group = new THREE.Group();
             const baseMat = new THREE.MeshStandardMaterial({ color: 0x666666, roughness: 0.7 });
-            
             for(let i = 0; i < 4; i++) {
                 const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.2, 6, 6), baseMat);
-                pillar.position.set(
-                    i % 2 === 0 ? -0.8 : 0.8,
-                    3,
-                    i < 2 ? -0.8 : 0.8
-                );
+                pillar.position.set(i % 2 === 0 ? -0.8 : 0.8, 3, i < 2 ? -0.8 : 0.8);
                 pillar.castShadow = true;
                 group.add(pillar);
             }
-            
             const platform = new THREE.Mesh(new THREE.BoxGeometry(3, 0.3, 3), baseMat);
             platform.position.y = 6;
             platform.castShadow = true;
-            
             group.add(platform);
             group.position.set(x, 0, z);
             environmentGroup.add(group);
-            
             if(Math.random() > 0.5) spawnItem('ammo_pack', x, z + 2);
             if(Math.random() > 0.8) spawnItem('helmet', x + 1, z);
         }
@@ -999,17 +830,11 @@
                 stone.position.set(Math.cos(angle) * 0.8, 0.1, Math.sin(angle) * 0.8);
                 group.add(stone);
             }
-            
-            const fire = new THREE.Mesh(
-                new THREE.ConeGeometry(0.4, 1, 4),
-                new THREE.MeshBasicMaterial({ color: 0xFF6600, transparent: true, opacity: 0.8 })
-            );
+            const fire = new THREE.Mesh(new THREE.ConeGeometry(0.4, 1, 4), new THREE.MeshBasicMaterial({ color: 0xFF6600, transparent: true, opacity: 0.8 }));
             fire.position.y = 0.5;
-            
             group.add(fire);
             group.position.set(x, 0, z);
             environmentGroup.add(group);
-            
             if(Math.random() > 0.4) spawnItem('water', x + 1, z + 1);
             if(Math.random() > 0.6) spawnItem('scrap', x - 1, z);
         }
@@ -1019,14 +844,10 @@
             const w1 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 3, 6), houseMat); w1.position.set(x - 3, 1.5, z);
             const w2 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 3, 6), houseMat); w2.position.set(x + 3, 1.5, z);
             const w3 = new THREE.Mesh(new THREE.BoxGeometry(6, 3, 0.5), houseMat); w3.position.set(x, 1.5, z - 3);
-            
-            const roofMat = new THREE.MeshStandardMaterial({ color: 0x8B0000, roughness: 0.7 });
-            const roof = new THREE.Mesh(new THREE.ConeGeometry(4, 1.5, 4), roofMat);
+            const roof = new THREE.Mesh(new THREE.ConeGeometry(4, 1.5, 4), new THREE.MeshStandardMaterial({ color: 0x8B0000, roughness: 0.7 }));
             roof.position.set(x, 3.5, z);
             roof.rotation.y = Math.PI / 4;
-            
             environmentGroup.add(w1, w2, w3, roof);
-            
             if(Math.random() > 0.5) spawnItem('ammo_pack', x, z);
             if(Math.random() > 0.7) spawnItem('scrap', x + 1, z + 1);
         }
@@ -1034,7 +855,6 @@
         function initVault() {
             clearEnvironment();
             currentLevel = 'vault';
-            
             scene.background = new THREE.Color(0x1a261a);
             scene.fog = new THREE.Fog(0x1a261a, 5, 30);
             ambientLight.intensity = 2.5;
@@ -1062,8 +882,7 @@
                     if(vaultMap[z][x] === 1) {
                         const wall = new THREE.Mesh(new THREE.BoxGeometry(tileSize, tileSize * 1.5, tileSize), vaultWallMat);
                         wall.position.set(posX, (tileSize * 1.5) / 2, posZ);
-                        wall.castShadow = true;
-                        wall.receiveShadow = true;
+                        wall.castShadow = true; wall.receiveShadow = true;
                         environmentGroup.add(wall);
                     } else if (vaultMap[z][x] === 2) {
                         const door = new THREE.Mesh(new THREE.BoxGeometry(tileSize, tileSize * 1.5, 0.5), doorMat);
@@ -1082,7 +901,7 @@
             spawnChest(6, -8);
             spawnMob(-4, -4, 'normal');
             
-            // Posicionar jogador CORRETAMENTE no chão
+            // Posicionar jogador no chão
             playerModel.position.set(0, 0, 8);
             camera.position.set(0, 3, 13);
             updateCameraMode();
@@ -1092,43 +911,25 @@
         function initWasteland() {
             clearEnvironment();
             currentLevel = 'wasteland';
-            
             scene.background = new THREE.Color(0x87CEEB);
             scene.fog = new THREE.Fog(0xB0C4DE, 30, 200);
             ambientLight.intensity = 3.5;
             
-            const floor = new THREE.Mesh(
-                new THREE.PlaneGeometry(300, 300), 
-                new THREE.MeshStandardMaterial({ color: 0xC4A46C, roughness: 0.8 })
-            );
+            const floor = new THREE.Mesh(new THREE.PlaneGeometry(300, 300), new THREE.MeshStandardMaterial({ color: 0xC4A46C, roughness: 0.8 }));
             floor.rotation.x = -Math.PI / 2;
             floor.receiveShadow = true;
             environmentGroup.add(floor);
             
             for(let i = 0; i < 30; i++) {
-                const grassPatch = new THREE.Mesh(
-                    new THREE.CircleGeometry(1 + Math.random() * 2, 8),
-                    new THREE.MeshStandardMaterial({ color: 0x8B9A46, roughness: 0.9, transparent: true, opacity: 0.2 })
-                );
+                const grassPatch = new THREE.Mesh(new THREE.CircleGeometry(1 + Math.random() * 2, 8), new THREE.MeshStandardMaterial({ color: 0x8B9A46, roughness: 0.9, transparent: true, opacity: 0.2 }));
                 grassPatch.rotation.x = -Math.PI / 2;
-                grassPatch.position.set(
-                    (Math.random() - 0.5) * 200,
-                    0.01,
-                    (Math.random() - 0.5) * 200
-                );
+                grassPatch.position.set((Math.random() - 0.5) * 200, 0.01, (Math.random() - 0.5) * 200);
                 environmentGroup.add(grassPatch);
             }
 
             for(let i = 0; i < 15; i++) {
-                const cloud = new THREE.Mesh(
-                    new THREE.SphereGeometry(2 + Math.random() * 3, 8, 8),
-                    new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.4, roughness: 1 })
-                );
-                cloud.position.set(
-                    (Math.random() - 0.5) * 150,
-                    20 + Math.random() * 15,
-                    (Math.random() - 0.5) * 150
-                );
+                const cloud = new THREE.Mesh(new THREE.SphereGeometry(2 + Math.random() * 3, 8, 8), new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.4, roughness: 1 }));
+                cloud.position.set((Math.random() - 0.5) * 150, 20 + Math.random() * 15, (Math.random() - 0.5) * 150);
                 cloud.scale.y = 0.3;
                 environmentGroup.add(cloud);
             }
@@ -1136,27 +937,16 @@
             for(let i = 0; i < 25; i++) {
                 const rx = (Math.random() - 0.5) * 120;
                 const rz = (Math.random() - 0.5) * 120;
-                
                 if(Math.abs(rx) > 10 && Math.abs(rz) > 10) {
                     const structureType = Math.random();
+                    if(structureType < 0.3) spawnAbandonedHouse(rx, rz);
+                    else if(structureType < 0.5) spawnRuinedStore(rx, rz);
+                    else if(structureType < 0.65) spawnGasStation(rx, rz);
+                    else if(structureType < 0.75) spawnWatchtower(rx, rz);
+                    else if(structureType < 0.85) spawnRuinedHouse(rx, rz);
+                    else spawnCampfire(rx, rz);
                     
-                    if(structureType < 0.3) {
-                        spawnAbandonedHouse(rx, rz);
-                    } else if(structureType < 0.5) {
-                        spawnRuinedStore(rx, rz);
-                    } else if(structureType < 0.65) {
-                        spawnGasStation(rx, rz);
-                    } else if(structureType < 0.75) {
-                        spawnWatchtower(rx, rz);
-                    } else if(structureType < 0.85) {
-                        spawnRuinedHouse(rx, rz);
-                    } else {
-                        spawnCampfire(rx, rz);
-                    }
-                    
-                    if(Math.random() > 0.5) {
-                        spawnDestroyedCar(rx + (Math.random() - 0.5) * 10, rz + (Math.random() - 0.5) * 10);
-                    }
+                    if(Math.random() > 0.5) spawnDestroyedCar(rx + (Math.random() - 0.5) * 10, rz + (Math.random() - 0.5) * 10);
                     
                     const mobType = Math.random();
                     if(mobType < 0.4) spawnMob(rx + 5, rz + 5, 'normal');
@@ -1168,17 +958,7 @@
                 }
             }
             
-            spawnAbandonedHouse(0, -15);
-            spawnRuinedStore(-20, 10);
-            spawnGasStation(25, -20);
-            spawnWatchtower(-25, -25);
-            spawnDestroyedCar(10, 10);
-            spawnDestroyedCar(-15, 5);
-            spawnCampfire(15, -10);
-            spawnCampfire(-10, 20);
-            
             spawnMob(0, -40, 'boss');
-            
             spawnItem('laser_rifle', 0, -8);
             spawnItem('plasma_rifle', -18, 12);
             spawnItem('minigun', 22, 8);
@@ -1190,13 +970,10 @@
             spawnItem('glove', -22, -8);
             
             for(let i = 0; i < 10; i++) {
-                spawnItem('ammo_pack', 
-                    (Math.random() - 0.5) * 80, 
-                    (Math.random() - 0.5) * 80
-                );
+                spawnItem('ammo_pack', (Math.random() - 0.5) * 80, (Math.random() - 0.5) * 80);
             }
             
-            // Posicionar jogador CORRETAMENTE no chão do ermo
+            // Posicionar jogador no chão do ermo
             playerModel.position.set(0, 0, 0);
             camera.position.set(0, 3, 5);
             updateCameraMode();
@@ -1206,7 +983,7 @@
         initVault();
 
         // =========================================
-        // Controles e UI
+        // Controles e UI - CORRIGIDO
         // =========================================
         const controls = new PointerLockControls(camera, document.body);
         const menu = document.getElementById('menu');
@@ -1233,7 +1010,6 @@
             document.getElementById('inv-water').innerText = inventory.water;
             document.getElementById('inv-stimpak').innerText = inventory.stimpak;
             document.getElementById('inv-ammo').innerText = ammo[weaponConfigs[currentWeapon].ammoType];
-            
             document.getElementById('inv-helmet').innerText = inventory.helmet || 'Nenhum';
             document.getElementById('inv-vest').innerText = inventory.vest || 'Nenhum';
             document.getElementById('inv-backpack').innerText = inventory.backpack || 'Nenhuma';
@@ -1306,15 +1082,12 @@
                         obj.userData.opened = true;
                         obj.userData.lidMesh.position.z -= 0.3;
                         obj.userData.lidMesh.rotation.x = -Math.PI / 4;
-                        
                         inventory.scrap += Math.floor(Math.random() * 5) + 1;
                         inventory.water += Math.floor(Math.random() * 3) + 1;
                         if(Math.random() > 0.4) inventory.stimpak += Math.floor(Math.random() * 2) + 1;
-                        
                         const equipChance = Math.random();
                         if(equipChance > 0.9 && !inventory.helmet) inventory.helmet = "Capacete de Combate";
                         else if(equipChance > 0.8 && !inventory.vest) inventory.vest = "Colete Tático";
-                        
                         updateUI();
                         updateMessage("Baú aberto! Itens adicionados ao inventário.");
                     }
@@ -1328,62 +1101,54 @@
 
             if (controls.isLocked) {
                 const delta = (time - prevTime) / 1000;
+                
+                // Limitar delta para evitar movimentos bruscos
+                const clampedDelta = Math.min(delta, 0.1);
 
-                velocity.x -= velocity.x * 10.0 * delta;
-                velocity.z -= velocity.z * 10.0 * delta;
+                velocity.x -= velocity.x * 10.0 * clampedDelta;
+                velocity.z -= velocity.z * 10.0 * clampedDelta;
                 direction.z = Number(moveF) - Number(moveB);
                 direction.x = Number(moveR) - Number(moveL);
-                direction.normalize(); 
+                direction.normalize();
 
-                let speed = 40.0;
+                let speed = 8.0; // Velocidade reduzida para melhor controle
                 if(inventory.boots) speed *= 1.1;
                 if(inventory.backpack) speed *= 1.05;
                 
-                if (moveF || moveB) velocity.z -= direction.z * speed * delta;
-                if (moveL || moveR) velocity.x -= direction.x * speed * delta;
+                if (moveF || moveB) velocity.z -= direction.z * speed * clampedDelta;
+                if (moveL || moveR) velocity.x -= direction.x * speed * clampedDelta;
 
-                controls.moveRight(-velocity.x * delta);
-                controls.moveForward(-velocity.z * delta);
+                // Aplicar movimento e LIMITAR ao mapa
+                controls.moveRight(-velocity.x * clampedDelta);
+                controls.moveForward(-velocity.z * clampedDelta);
 
-                // CORREÇÃO: Atualizar posição do modelo do jogador baseado na câmera
-                if (isThirdPerson) {
-                    // Em terceira pessoa, o modelo segue a câmera
-                    playerModel.position.x = camera.position.x;
-                    playerModel.position.z = camera.position.z;
-                    playerModel.position.y = 0; // FIXO no chão!
-                    
-                    const cameraDirection = new THREE.Vector3();
-                    camera.getWorldDirection(cameraDirection);
-                    playerModel.rotation.y = Math.atan2(cameraDirection.x, cameraDirection.z);
-                    
-                    updateCameraMode();
-                } else {
-                    // Em primeira pessoa, esconde o modelo
-                    playerModel.visible = false;
-                }
+                // CORREÇÃO PRINCIPAL: Limitar posição da câmera ao mapa
+                camera.position.x = Math.max(-MAP_BOUNDARY, Math.min(MAP_BOUNDARY, camera.position.x));
+                camera.position.z = Math.max(-MAP_BOUNDARY, Math.min(MAP_BOUNDARY, camera.position.z));
+                camera.position.y = Math.max(0.1, camera.position.y); // Não deixar cair abaixo do chão
+
+                // Atualizar modelo do jogador
+                playerModel.position.x = camera.position.x;
+                playerModel.position.z = camera.position.z;
+                playerModel.position.y = 0; // SEMPRE NO CHÃO
+
+                // Rotacionar modelo na direção da câmera
+                const cameraDirection = new THREE.Vector3();
+                camera.getWorldDirection(cameraDirection);
+                playerModel.rotation.y = Math.atan2(cameraDirection.x, cameraDirection.z);
 
                 // Animações de movimento
                 if (moveF || moveB || moveL || moveR) {
-                    // Animação de caminhada (balançar braços e pernas)
-                    const walkCycle = Math.sin(time * 0.01);
+                    const walkCycle = Math.sin(time * 0.015);
                     leftArmGroup.rotation.x = walkCycle * 0.5;
                     rightArmGroup.rotation.x = -walkCycle * 0.5;
                     leftLegGroup.rotation.x = -walkCycle * 0.5;
                     rightLegGroup.rotation.x = walkCycle * 0.5;
-                    
-                    if (!isThirdPerson) {
-                        weapons.position.y = -0.3 + Math.sin(time * 0.012) * 0.02;
-                    }
                 } else {
-                    // Voltar à posição de descanso
-                    leftArmGroup.rotation.x = 0;
-                    rightArmGroup.rotation.x = 0;
-                    leftLegGroup.rotation.x = 0;
-                    rightLegGroup.rotation.x = 0;
-                    
-                    if (!isThirdPerson) {
-                        weapons.position.y = -0.3 + Math.sin(time * 0.003) * 0.005;
-                    }
+                    leftArmGroup.rotation.x *= 0.9;
+                    rightArmGroup.rotation.x *= 0.9;
+                    leftLegGroup.rotation.x *= 0.9;
+                    rightLegGroup.rotation.x *= 0.9;
                 }
 
                 if (currentWeapon === 5 && minigun.visible) {
@@ -1392,25 +1157,19 @@
                 }
 
                 // Coleta de itens
+                const playerPos = playerModel.position;
                 for (let i = items.length - 1; i >= 0; i--) {
                     const item = items[i];
                     item.rotation.y += 0.02;
-                    const collectDist = isThirdPerson ? 
-                        playerModel.position.distanceTo(item.position) : 
-                        camera.position.distanceTo(item.position);
-                    
-                    if (collectDist < 1.8) {
+                    if (playerPos.distanceTo(item.position) < 2.0) {
                         environmentGroup.remove(item);
                         const type = item.userData.type;
-                        
                         if (type === 'shotgun') { unlockWeapon(2); equipWeapon(2); updateMessage("Escopeta equipada!"); }
                         else if (type === 'laser_rifle') { unlockWeapon(3); equipWeapon(3); updateMessage("Rifle Laser equipado!"); }
                         else if (type === 'plasma_rifle') { unlockWeapon(4); equipWeapon(4); updateMessage("Rifle Plasma equipado!"); }
                         else if (type === 'minigun') { unlockWeapon(5); equipWeapon(5); updateMessage("Metralhadora equipada!"); }
                         else if (type === 'ammo_pack') {
-                            Object.keys(ammo).forEach(key => {
-                                if(key !== 'pistol') ammo[key] += 10;
-                            });
+                            Object.keys(ammo).forEach(key => { if(key !== 'pistol') ammo[key] += 10; });
                             updateMessage("Pacote de munição coletado! +10 munição");
                         }
                         else if (type === 'helmet') { inventory.helmet = "Capacete de Combate"; updateMessage("Capacete equipado! +10 defesa"); }
@@ -1418,30 +1177,23 @@
                         else if (type === 'backpack') { inventory.backpack = "Mochila Militar"; updateMessage("Mochila equipada! +5% velocidade"); }
                         else if (type === 'boots') { inventory.boots = "Botas Táticas"; updateMessage("Botas equipadas! +10% velocidade"); }
                         else if (type === 'glove') { inventory.glove = "Luva de Combate"; updateMessage("Luva equipada! +5 defesa"); }
-                        else {
-                            inventory[type]++;
-                            updateMessage(`Coletado: ${type.toUpperCase()}`);
-                        }
-                        
+                        else { inventory[type]++; updateMessage(`Coletado: ${type.toUpperCase()}`); }
                         items.splice(i, 1);
                         updateUI();
                     }
                 }
 
-                // Comportamento dos mobs
-                const playerPos = isThirdPerson ? playerModel.position : camera.position;
+                // Mobs
                 mobs.forEach(mob => {
                     const dist = playerPos.distanceTo(mob.position);
                     const mobData = mob.userData;
-                    
                     if(dist < 25 && dist > 1.2) {
                         const mobSpeed = mobData.speed;
                         const dir = new THREE.Vector3().subVectors(playerPos, mob.position).normalize();
                         mob.position.x += dir.x * mobSpeed;
                         mob.position.z += dir.z * mobSpeed;
-                        mob.lookAt(playerPos);
+                        mob.lookAt(playerPos.x, 0, playerPos.z);
                     }
-                    
                     mob.position.y = Math.sin(time * 0.005 + mob.position.x) * 0.05;
                     
                     if(dist <= 1.5 && time - lastDamageTime > 1000) {
@@ -1449,21 +1201,23 @@
                         if(mobData.type === 'strong') damage = 25;
                         if(mobData.type === 'boss') damage = 40;
                         if(mobData.type === 'fast') damage = 10;
-                        
                         const reducedDamage = Math.max(1, damage - (playerArmor * 0.5));
                         playerHP -= reducedDamage;
-                        
                         lastDamageTime = time;
                         updateUI();
                         document.getElementById('damage-screen').style.opacity = '1';
                         setTimeout(() => document.getElementById('damage-screen').style.opacity = '0', 200);
-                        
                         if(playerHP <= 0) {
                             alert("Você morreu! Recarregue a página para reiniciar.");
                             document.location.reload();
                         }
                     }
                 });
+
+                // Atualizar câmera em terceira pessoa
+                if (isThirdPerson) {
+                    updateCameraMode();
+                }
             }
 
             prevTime = time;
