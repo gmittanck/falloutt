@@ -5,28 +5,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vault Explorer - Primeira Pessoa</title>
     <style>
-        body {
+        * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
             background: #000;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
+            width: 100vw;
             font-family: 'Courier New', monospace;
             overflow: hidden;
         }
         
         #game-container {
             position: relative;
-            width: 800px;
-            height: 600px;
+            width: 100vw;
+            height: 100vh;
             border: 2px solid #39ff14;
-            box-shadow: 0 0 20px rgba(57, 255, 20, 0.4);
+            box-shadow: 0 0 30px rgba(57, 255, 20, 0.4);
         }
         
         canvas {
             display: block;
+            width: 100%;
+            height: 100%;
             background: #000;
             cursor: none;
         }
@@ -45,23 +52,23 @@
             justify-content: space-between;
             background: rgba(0, 0, 0, 0.8);
             color: #39ff14;
-            padding: 10px 15px;
-            font-size: 14px;
+            padding: 15px 20px;
+            font-size: 18px;
             border-bottom: 1px solid #39ff14;
         }
         
         #message-box {
             position: absolute;
-            bottom: 10px;
+            bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
             background: rgba(0, 20, 0, 0.9);
             border: 1px solid #39ff14;
             color: #39ff14;
-            padding: 8px 20px;
-            font-size: 13px;
+            padding: 10px 25px;
+            font-size: 16px;
             text-align: center;
-            min-width: 300px;
+            min-width: 400px;
             border-radius: 3px;
             pointer-events: none;
         }
@@ -71,15 +78,16 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 500px;
+            width: 600px;
             background: rgba(0, 20, 0, 0.95);
             border: 2px solid #39ff14;
             color: #39ff14;
-            padding: 20px;
+            padding: 25px;
             display: none;
             z-index: 20;
             border-radius: 5px;
             pointer-events: auto;
+            font-size: 16px;
         }
         
         #inventory-overlay h2 {
@@ -87,18 +95,19 @@
             text-align: center;
             border-bottom: 1px solid #39ff14;
             padding-bottom: 10px;
+            font-size: 24px;
         }
         
         .inv-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
+            gap: 15px;
         }
         
         .inv-item {
             border: 1px dashed #39ff14;
-            padding: 10px;
-            font-size: 13px;
+            padding: 15px;
+            font-size: 15px;
         }
         
         #menu {
@@ -119,13 +128,13 @@
         }
         
         #menu h1 {
-            font-size: 2.5rem;
-            margin-bottom: 20px;
+            font-size: 4rem;
+            margin-bottom: 30px;
         }
         
         #menu p {
-            font-size: 1rem;
-            margin: 5px 0;
+            font-size: 1.3rem;
+            margin: 8px 0;
         }
         
         .crosshair {
@@ -134,7 +143,7 @@
             left: 50%;
             transform: translate(-50%, -50%);
             color: #fff;
-            font-size: 24px;
+            font-size: 30px;
             z-index: 5;
             pointer-events: none;
             opacity: 0.8;
@@ -197,14 +206,14 @@
                     💉 Stimpaks: <span id="inv-stimpak">0</span>
                 </div>
             </div>
-            <p style="text-align: center; margin-top: 15px; font-size: 12px;">[I] ou [TAB] para fechar</p>
+            <p style="text-align: center; margin-top: 15px; font-size: 14px;">[I] ou [TAB] para fechar</p>
         </div>
         
         <div id="menu">
             <h1>⚡ VAULT EXPLORER FPS ⚡</h1>
-            <p class="pulse" style="font-size: 1.5rem; margin-top: 20px;">[ CLIQUE PARA JOGAR ]</p>
-            <p style="font-size: 0.9rem; margin-top: 30px;">WASD: Mover | Mouse: Olhar/Atirar | E: Interagir</p>
-            <p style="font-size: 0.9rem;">H: Curar | 1-5: Armas | I: Inventário</p>
+            <p class="pulse" style="font-size: 2rem; margin-top: 30px;">[ CLIQUE PARA JOGAR ]</p>
+            <p style="font-size: 1.2rem; margin-top: 40px;">WASD: Mover | Mouse: Olhar/Atirar | E: Interagir</p>
+            <p style="font-size: 1.2rem;">H: Curar | 1-5: Armas | I: Inventário</p>
         </div>
     </div>
 
@@ -215,14 +224,18 @@
         const damageFlash = document.getElementById('damage-flash');
         const crosshair = document.getElementById('crosshair');
         
-        canvas.width = 800;
-        canvas.height = 600;
+        // Tamanho do canvas responsivo
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
         
         // =========================================
         // CONFIGURAÇÕES DO RAYCASTING
         // =========================================
         const FOV = Math.PI / 3;
-        const NUM_RAYS = 320;
         const MAX_DEPTH = 800;
         
         // Estado do jogo
@@ -237,8 +250,9 @@
             angle: -Math.PI / 2,
             hp: 100,
             armor: 0,
-            speed: 3,
-            mouseSensitivity: 0.003
+            speed: 5,
+            mouseSensitivity: 0.005,
+            radius: 15
         };
         
         // Armas
@@ -272,9 +286,9 @@
         let mouseDown = false;
         
         // Mouse
-        let mouseX = 400;
-        let mouseY = 300;
-        let lastMouseX = 400;
+        let mouseX = 0;
+        let mouseY = 0;
+        let lastMouseX = 0;
         
         // Mensagem
         let message = "Clique para começar | WASD: Mover | Mouse: Atirar";
@@ -334,7 +348,7 @@
             
             enemies.push({
                 x: 350, y: 300, radius: 20,
-                hp: 3, maxHp: 3, speed: 1.2,
+                hp: 3, maxHp: 3, speed: 1.5,
                 color: '#44ff44', type: 'normal', damage: 10
             });
             
@@ -388,9 +402,9 @@
                 
                 let hp, speed, color, radius, damage;
                 switch(type) {
-                    case 'normal': hp = 3; speed = 1.2; color = '#44ff44'; radius = 20; damage = 10; break;
-                    case 'strong': hp = 8; speed = 0.8; color = '#ff4444'; radius = 25; damage = 20; break;
-                    case 'fast': hp = 2; speed = 2.5; color = '#ffff00'; radius = 15; damage = 8; break;
+                    case 'normal': hp = 3; speed = 1.5; color = '#44ff44'; radius = 20; damage = 10; break;
+                    case 'strong': hp = 8; speed = 1.0; color = '#ff4444'; radius = 25; damage = 20; break;
+                    case 'fast': hp = 2; speed = 3.0; color = '#ffff00'; radius = 15; damage = 8; break;
                 }
                 
                 enemies.push({ x, y, radius, hp, maxHp: hp, speed, color, type, damage });
@@ -398,7 +412,7 @@
             
             enemies.push({
                 x: 400, y: 400, radius: 35,
-                hp: 25, maxHp: 25, speed: 0.6,
+                hp: 25, maxHp: 25, speed: 0.8,
                 color: '#ff00ff', type: 'boss', damage: 35
             });
             
@@ -479,7 +493,6 @@
             updateUI();
             setMessage("🏚️ Vault 13 - Encontre a porta amarela!");
             
-            // Centralizar mouse
             mouseX = canvas.width / 2;
             mouseY = canvas.height / 2;
             lastMouseX = mouseX;
@@ -502,7 +515,6 @@
                 updateUI();
             }
             
-            // Verificar hit
             const spread = currentWeapon === 2 ? 0.1 : 0.03;
             const randomAngle = player.angle + (Math.random() - 0.5) * spread;
             const ray = castRay(randomAngle);
@@ -533,7 +545,6 @@
                 }
             }
             
-            // Muzzle flash
             createMuzzleFlash();
         }
         
@@ -544,8 +555,8 @@
                 top: 50%;
                 left: 50%;
                 transform: translate(-50%, -50%);
-                width: 100px;
-                height: 100px;
+                width: 150px;
+                height: 150px;
                 background: radial-gradient(circle, rgba(255,255,0,0.8), transparent);
                 border-radius: 50%;
                 z-index: 6;
@@ -664,60 +675,53 @@
         function update() {
             if (!gameStarted || inventoryOpen) return;
             
-            // MOVIMENTO DO MOUSE PARA ROTAÇÃO
-            const mouseDeltaX = mouseX - lastMouseX;
-            if (Math.abs(mouseDeltaX) > 0) {
-                player.angle += mouseDeltaX * player.mouseSensitivity;
+            // ROTAÇÃO COM MOUSE
+            if (Math.abs(mouseX - lastMouseX) > 0) {
+                player.angle += (mouseX - lastMouseX) * player.mouseSensitivity;
                 lastMouseX = mouseX;
+                
+                if (player.angle < 0) player.angle += Math.PI * 2;
+                if (player.angle > Math.PI * 2) player.angle -= Math.PI * 2;
             }
-            
-            // Manter ângulo entre 0 e 2PI
-            if (player.angle < 0) player.angle += Math.PI * 2;
-            if (player.angle > Math.PI * 2) player.angle -= Math.PI * 2;
             
             // MOVIMENTO COM TECLADO
             let moveX = 0;
             let moveY = 0;
             let isMoving = false;
             
-            if (keys['w'] || keys['arrowup']) {
+            if (keys['w'] || keys['arrowup'] || keys['W'] || keys['ArrowUp']) {
                 moveX += Math.cos(player.angle) * player.speed;
                 moveY += Math.sin(player.angle) * player.speed;
                 isMoving = true;
             }
-            if (keys['s'] || keys['arrowdown']) {
+            if (keys['s'] || keys['arrowdown'] || keys['S'] || keys['ArrowDown']) {
                 moveX -= Math.cos(player.angle) * player.speed;
                 moveY -= Math.sin(player.angle) * player.speed;
                 isMoving = true;
             }
-            if (keys['a'] || keys['arrowleft']) {
+            if (keys['a'] || keys['arrowleft'] || keys['A'] || keys['ArrowLeft']) {
                 moveX += Math.cos(player.angle - Math.PI/2) * player.speed;
                 moveY += Math.sin(player.angle - Math.PI/2) * player.speed;
                 isMoving = true;
             }
-            if (keys['d'] || keys['arrowright']) {
+            if (keys['d'] || keys['arrowright'] || keys['D'] || keys['ArrowRight']) {
                 moveX += Math.cos(player.angle + Math.PI/2) * player.speed;
                 moveY += Math.sin(player.angle + Math.PI/2) * player.speed;
                 isMoving = true;
             }
             
-            // Aplicar movimento com colisão
             if (isMoving) {
-                // Tentar mover em X
-                if (!checkCollision(player.x + moveX, player.y, 15)) {
+                if (!checkCollision(player.x + moveX, player.y, player.radius)) {
                     player.x += moveX;
                 }
-                // Tentar mover em Y
-                if (!checkCollision(player.x, player.y + moveY, 15)) {
+                if (!checkCollision(player.x, player.y + moveY, player.radius)) {
                     player.y += moveY;
                 }
             }
             
-            // Limites do canvas
             player.x = Math.max(20, Math.min(780, player.x));
             player.y = Math.max(20, Math.min(580, player.y));
             
-            // Atirar
             if (mouseDown) {
                 shoot();
             }
@@ -759,7 +763,6 @@
                 }
             }
             
-            // Timer da mensagem
             if (messageTimer > 0) {
                 messageTimer--;
                 if (messageTimer === 0) {
@@ -769,6 +772,10 @@
         }
         
         function draw3DView() {
+            const numRays = Math.floor(canvas.width / 3);
+            const rayAngleStep = FOV / numRays;
+            const startAngle = player.angle - FOV / 2;
+            
             // Céu
             const skyGradient = ctx.createLinearGradient(0, 0, 0, canvas.height/2);
             if (currentLevel === 'vault') {
@@ -793,11 +800,7 @@
             ctx.fillStyle = floorGradient;
             ctx.fillRect(0, canvas.height/2, canvas.width, canvas.height/2);
             
-            // Raycasting
-            const rayAngleStep = FOV / NUM_RAYS;
-            const startAngle = player.angle - FOV / 2;
-            
-            for (let i = 0; i < NUM_RAYS; i++) {
+            for (let i = 0; i < numRays; i++) {
                 const rayAngle = startAngle + i * rayAngleStep;
                 const ray = castRay(rayAngle);
                 
@@ -805,7 +808,7 @@
                 const wallHeight = Math.min(canvas.height, (canvas.height / correctedDistance) * 200);
                 const wallTop = (canvas.height - wallHeight) / 2;
                 
-                const columnWidth = canvas.width / NUM_RAYS;
+                const columnWidth = canvas.width / numRays;
                 const x = i * columnWidth;
                 const brightness = Math.max(0.2, 1 - correctedDistance / MAX_DEPTH);
                 
@@ -846,41 +849,36 @@
         function drawWeapon() {
             const weapon = weapons[currentWeapon];
             const centerX = canvas.width / 2;
-            const weaponY = canvas.height - 120;
+            const weaponY = canvas.height - 150;
             
-            // Corpo da arma
             ctx.fillStyle = '#555';
-            ctx.fillRect(centerX - 25, weaponY, 50, 90);
+            ctx.fillRect(centerX - 35, weaponY, 70, 120);
             
-            // Cano
             ctx.fillStyle = '#333';
-            ctx.fillRect(centerX - 4, weaponY - 30, 8, 40);
+            ctx.fillRect(centerX - 6, weaponY - 40, 12, 50);
             
-            // Detalhes
             ctx.fillStyle = '#777';
-            ctx.fillRect(centerX - 20, weaponY + 15, 40, 15);
+            ctx.fillRect(centerX - 28, weaponY + 20, 56, 20);
             
-            // Nome da arma
             ctx.fillStyle = '#39ff14';
-            ctx.font = '12px Courier New';
+            ctx.font = '16px Courier New';
             ctx.textAlign = 'center';
-            ctx.fillText(weapon.name, centerX, weaponY - 40);
+            ctx.fillText(weapon.name, centerX, weaponY - 50);
         }
         
         function drawMinimap() {
-            const mapSize = 150;
-            const mapX = canvas.width - mapSize - 10;
-            const mapY = 10;
+            const mapSize = 180;
+            const mapX = canvas.width - mapSize - 20;
+            const mapY = 80;
             
             ctx.fillStyle = 'rgba(0,0,0,0.7)';
             ctx.fillRect(mapX, mapY, mapSize, mapSize);
             ctx.strokeStyle = '#39ff14';
-            ctx.lineWidth = 1;
+            ctx.lineWidth = 2;
             ctx.strokeRect(mapX, mapY, mapSize, mapSize);
             
             const scale = mapSize / 800;
             
-            // Paredes
             ctx.fillStyle = '#555';
             for (let wall of walls) {
                 ctx.fillRect(
@@ -891,7 +889,6 @@
                 );
             }
             
-            // Porta
             if (door) {
                 ctx.fillStyle = '#ffaa00';
                 ctx.fillRect(
@@ -902,36 +899,32 @@
                 );
             }
             
-            // Inimigos
             for (let enemy of enemies) {
                 ctx.fillStyle = enemy.color;
                 ctx.beginPath();
                 ctx.arc(
                     mapX + enemy.x * scale,
                     mapY + enemy.y * scale,
-                    Math.max(2, enemy.radius * scale),
+                    Math.max(3, enemy.radius * scale),
                     0, Math.PI * 2
                 );
                 ctx.fill();
             }
             
-            // Itens
             for (let item of items) {
                 ctx.fillStyle = item.color;
                 ctx.beginPath();
-                ctx.arc(mapX + item.x * scale, mapY + item.y * scale, 2, 0, Math.PI * 2);
+                ctx.arc(mapX + item.x * scale, mapY + item.y * scale, 3, 0, Math.PI * 2);
                 ctx.fill();
             }
             
-            // Jogador
             ctx.fillStyle = '#00ff00';
             ctx.beginPath();
-            ctx.arc(mapX + player.x * scale, mapY + player.y * scale, 4, 0, Math.PI * 2);
+            ctx.arc(mapX + player.x * scale, mapY + player.y * scale, 5, 0, Math.PI * 2);
             ctx.fill();
             
-            // Direção
             ctx.strokeStyle = '#ff0000';
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 3;
             ctx.beginPath();
             ctx.moveTo(mapX + player.x * scale, mapY + player.y * scale);
             ctx.lineTo(
@@ -965,11 +958,12 @@
         // EVENT LISTENERS
         // =========================================
         document.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
             keys[e.key.toLowerCase()] = true;
             
             if (!gameStarted) return;
             
-            switch(e.key) {
+            switch(e.key.toLowerCase()) {
                 case '1': equipWeapon(1); break;
                 case '2': equipWeapon(2); break;
                 case '3': equipWeapon(3); break;
@@ -984,7 +978,7 @@
                     }
                     break;
                 case 'i':
-                case 'Tab':
+                case 'tab':
                     e.preventDefault();
                     inventoryOpen = !inventoryOpen;
                     document.getElementById('inventory-overlay').style.display = inventoryOpen ? 'block' : 'none';
@@ -997,22 +991,20 @@
         });
         
         document.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
             keys[e.key.toLowerCase()] = false;
         });
         
-        // MOUSE - CORRIGIDO
         canvas.addEventListener('mousemove', (e) => {
             if (gameStarted && !inventoryOpen) {
                 const rect = canvas.getBoundingClientRect();
                 mouseX = e.clientX - rect.left;
                 mouseY = e.clientY - rect.top;
                 
-                // Atualizar lastMouseX para movimento relativo
                 if (Math.abs(mouseX - lastMouseX) > 0) {
                     player.angle += (mouseX - lastMouseX) * player.mouseSensitivity;
                     lastMouseX = mouseX;
                     
-                    // Manter ângulo válido
                     if (player.angle < 0) player.angle += Math.PI * 2;
                     if (player.angle > Math.PI * 2) player.angle -= Math.PI * 2;
                 }
@@ -1029,7 +1021,7 @@
             }
         });
         
-        canvas.addEventListener('mouseup', (e) => {
+        document.addEventListener('mouseup', (e) => {
             if (e.button === 0) {
                 mouseDown = false;
             }
@@ -1045,19 +1037,18 @@
             e.preventDefault();
         });
         
-        // Prevenir scroll
         window.addEventListener('keydown', (e) => {
             if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
                 e.preventDefault();
             }
         });
         
-        // Iniciar
         updateUI();
         gameLoop();
         
-        console.log('🎮 Vault Explorer FPS pronto! Clique na tela para jogar.');
-        console.log('Use WASD para mover e o mouse para olhar ao redor.');
+        console.log('🎮 Vault Explorer FPS pronto!');
+        console.log('Clique na tela para jogar');
+        console.log('WASD para mover, mouse para olhar, clique para atirar');
     </script>
 </body>
 </html>
