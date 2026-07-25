@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vault Explorer - 2D Top-Down</title>
+    <title>Vault Explorer - Primeira Pessoa</title>
     <style>
         body {
             margin: 0;
@@ -27,8 +27,8 @@
         
         canvas {
             display: block;
-            background: #1a1a2e;
-            cursor: crosshair;
+            background: #000;
+            cursor: none;
         }
         
         #ui {
@@ -63,6 +63,7 @@
             text-align: center;
             min-width: 300px;
             border-radius: 3px;
+            pointer-events: none;
         }
         
         #inventory-overlay {
@@ -127,6 +128,18 @@
             margin: 5px 0;
         }
         
+        .crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-size: 24px;
+            z-index: 5;
+            pointer-events: none;
+            opacity: 0.8;
+        }
+        
         .pulse {
             animation: pulse 2s infinite;
         }
@@ -135,11 +148,26 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
         }
+        
+        .damage-flash {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 0, 0, 0.4);
+            z-index: 4;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.1s;
+        }
     </style>
 </head>
 <body>
     <div id="game-container">
         <canvas id="gameCanvas"></canvas>
+        <div class="crosshair" id="crosshair">⌖</div>
+        <div class="damage-flash" id="damage-flash"></div>
         
         <div id="ui">
             <div id="hud">
@@ -149,7 +177,7 @@
             </div>
         </div>
         
-        <div id="message-box">Clique para começar | WASD: Mover | Mouse: Atirar</div>
+        <div id="message-box">Clique para começar | WASD: Mover | Mouse: Olhar/Atirar</div>
         
         <div id="inventory-overlay">
             <h2>📟 INVENTÁRIO</h2>
@@ -173,9 +201,9 @@
         </div>
         
         <div id="menu">
-            <h1>⚡ VAULT EXPLORER 2D ⚡</h1>
+            <h1>⚡ VAULT EXPLORER FPS ⚡</h1>
             <p class="pulse" style="font-size: 1.5rem; margin-top: 20px;">[ CLIQUE PARA JOGAR ]</p>
-            <p style="font-size: 0.9rem; margin-top: 30px;">WASD: Mover | Mouse: Mirar/Atirar | E: Interagir</p>
+            <p style="font-size: 0.9rem; margin-top: 30px;">WASD: Mover | Mouse: Olhar/Atirar | E: Interagir</p>
             <p style="font-size: 0.9rem;">H: Curar | 1-5: Armas | I: Inventário</p>
         </div>
     </div>
@@ -183,11 +211,19 @@
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        const container = document.getElementById('game-container');
         const menu = document.getElementById('menu');
+        const damageFlash = document.getElementById('damage-flash');
+        const crosshair = document.getElementById('crosshair');
         
         canvas.width = 800;
         canvas.height = 600;
+        
+        // =========================================
+        // CONFIGURAÇÕES DO RAYCASTING
+        // =========================================
+        const FOV = Math.PI / 3;
+        const NUM_RAYS = 320;
+        const MAX_DEPTH = 800;
         
         // Estado do jogo
         let gameStarted = false;
@@ -198,39 +234,30 @@
         const player = {
             x: 400,
             y: 500,
-            radius: 15,
+            angle: -Math.PI / 2,
             hp: 100,
             armor: 0,
             speed: 3,
-            angle: 0
+            mouseSensitivity: 0.003
         };
         
         // Armas
         const weapons = {
-            1: { name: 'Pistola 10mm', damage: 25, ammo: Infinity, fireRate: 200, color: '#ffff00', bulletSize: 3, bulletSpeed: 8 },
-            2: { name: 'Escopeta', damage: 60, ammo: 15, fireRate: 600, color: '#ff8800', bulletSize: 4, bulletSpeed: 6, spread: 5 },
-            3: { name: 'Rifle Laser', damage: 40, ammo: 25, fireRate: 300, color: '#ff0000', bulletSize: 3, bulletSpeed: 10 },
-            4: { name: 'Rifle Plasma', damage: 80, ammo: 8, fireRate: 500, color: '#00ff44', bulletSize: 5, bulletSpeed: 7 },
-            5: { name: 'Metralhadora', damage: 30, ammo: 80, fireRate: 100, color: '#ffaa00', bulletSize: 2, bulletSpeed: 9, spread: 3 }
+            1: { name: 'Pistola 10mm', damage: 25, ammo: Infinity, fireRate: 200 },
+            2: { name: 'Escopeta', damage: 60, ammo: 15, fireRate: 600 },
+            3: { name: 'Rifle Laser', damage: 40, ammo: 25, fireRate: 300 },
+            4: { name: 'Rifle Plasma', damage: 80, ammo: 8, fireRate: 500 },
+            5: { name: 'Metralhadora', damage: 30, ammo: 80, fireRate: 100 }
         };
         
         let currentWeapon = 1;
         let unlockedWeapons = { 1: true, 2: false, 3: false, 4: false, 5: false };
-        
-        // Balas
-        let bullets = [];
         let lastFireTime = 0;
         
-        // Inimigos
-        let enemies = [];
-        
-        // Itens
-        let items = [];
-        
-        // Paredes
+        // Mapa
         let walls = [];
-        
-        // Porta
+        let enemies = [];
+        let items = [];
         let door = null;
         
         // Inventário
@@ -240,15 +267,21 @@
             stimpak: 0
         };
         
-        // Input
+        // Controles
         const keys = {};
+        let mouseDown = false;
+        
+        // Mouse
         let mouseX = 400;
         let mouseY = 300;
-        let mouseDown = false;
+        let lastMouseX = 400;
         
         // Mensagem
         let message = "Clique para começar | WASD: Mover | Mouse: Atirar";
         let messageTimer = 0;
+        
+        // Dano
+        let lastDamageTime = 0;
         
         // =========================================
         // INICIALIZAÇÃO DOS MAPAS
@@ -257,10 +290,8 @@
             walls = [];
             enemies = [];
             items = [];
-            bullets = [];
             door = null;
             
-            // Layout do vault
             const layout = [
                 [1,1,1,1,2,1,1,1,1,1],
                 [1,0,0,0,0,0,0,0,0,1],
@@ -282,45 +313,34 @@
                     
                     if (layout[row][col] === 1) {
                         walls.push({
-                            x: x,
-                            y: y,
-                            width: cellSize,
-                            height: cellSize,
+                            x: x, y: y,
+                            width: cellSize, height: cellSize,
                             color: '#5a6a5a'
                         });
                     } else if (layout[row][col] === 2) {
                         door = {
-                            x: x,
-                            y: y,
-                            width: cellSize,
-                            height: cellSize,
+                            x: x, y: y,
+                            width: cellSize, height: cellSize,
                             color: '#ffaa00'
                         };
                     }
                 }
             }
             
-            // Spawnar itens
-            items.push({ x: 400, y: 400, type: 'scrap', color: '#cccccc', radius: 8 });
-            items.push({ x: 200, y: 250, type: 'stimpak', color: '#ff0000', radius: 8 });
-            items.push({ x: 600, y: 200, type: 'shotgun', color: '#8B4513', radius: 10 });
-            items.push({ x: 300, y: 450, type: 'ammo_pack', color: '#ffaa00', radius: 8 });
+            items.push({ x: 400, y: 400, type: 'scrap', color: '#cccccc', radius: 10 });
+            items.push({ x: 200, y: 250, type: 'stimpak', color: '#ff0000', radius: 10 });
+            items.push({ x: 600, y: 200, type: 'shotgun', color: '#8B4513', radius: 12 });
+            items.push({ x: 300, y: 450, type: 'ammo_pack', color: '#ffaa00', radius: 10 });
             
-            // Spawnar inimigo
             enemies.push({
-                x: 350,
-                y: 300,
-                radius: 15,
-                hp: 3,
-                maxHp: 3,
-                speed: 1.5,
-                color: '#44ff44',
-                type: 'normal',
-                damage: 10
+                x: 350, y: 300, radius: 20,
+                hp: 3, maxHp: 3, speed: 1.2,
+                color: '#44ff44', type: 'normal', damage: 10
             });
             
             player.x = 400;
-            player.y = 500;
+            player.y = 520;
+            player.angle = -Math.PI / 2;
             currentLevel = 'vault';
             setMessage("🏚️ Vault 13 - Encontre a porta amarela!");
         }
@@ -329,47 +349,38 @@
             walls = [];
             enemies = [];
             items = [];
-            bullets = [];
             door = null;
             
-            // Paredes aleatórias do ermo
-            for (let i = 0; i < 15; i++) {
+            for (let i = 0; i < 20; i++) {
                 const x = Math.random() * 700 + 50;
                 const y = Math.random() * 500 + 50;
-                const w = 30 + Math.random() * 60;
-                const h = 30 + Math.random() * 60;
+                const w = 30 + Math.random() * 50;
+                const h = 30 + Math.random() * 50;
                 
                 walls.push({
-                    x: x,
-                    y: y,
-                    width: w,
-                    height: h,
+                    x: x, y: y,
+                    width: w, height: h,
                     color: '#8B7355'
                 });
             }
             
-            // Spawnar muitos itens
-            for (let i = 0; i < 20; i++) {
+            for (let i = 0; i < 25; i++) {
                 const x = Math.random() * 700 + 50;
                 const y = Math.random() * 500 + 50;
-                const types = ['scrap', 'scrap', 'scrap', 'ammo_pack', 'stimpak', 'water'];
+                const types = ['scrap', 'scrap', 'ammo_pack', 'stimpak', 'water'];
                 const type = types[Math.floor(Math.random() * types.length)];
                 items.push({
-                    x: x,
-                    y: y,
-                    type: type,
+                    x: x, y: y, type: type,
                     color: type === 'scrap' ? '#cccccc' : type === 'ammo_pack' ? '#ffaa00' : type === 'stimpak' ? '#ff0000' : '#4488ff',
-                    radius: 8
+                    radius: 10
                 });
             }
             
-            // Armas especiais
-            items.push({ x: 400, y: 100, type: 'laser_rifle', color: '#ff0000', radius: 10 });
-            items.push({ x: 600, y: 400, type: 'plasma_rifle', color: '#00ff44', radius: 10 });
-            items.push({ x: 150, y: 150, type: 'minigun', color: '#333333', radius: 10 });
+            items.push({ x: 400, y: 100, type: 'laser_rifle', color: '#ff0000', radius: 12 });
+            items.push({ x: 600, y: 400, type: 'plasma_rifle', color: '#00ff44', radius: 12 });
+            items.push({ x: 150, y: 150, type: 'minigun', color: '#333333', radius: 12 });
             
-            // Muitos inimigos
-            for (let i = 0; i < 12; i++) {
+            for (let i = 0; i < 15; i++) {
                 const x = Math.random() * 700 + 50;
                 const y = Math.random() * 500 + 50;
                 const types = ['normal', 'normal', 'normal', 'strong', 'fast', 'fast'];
@@ -377,27 +388,78 @@
                 
                 let hp, speed, color, radius, damage;
                 switch(type) {
-                    case 'normal': hp = 3; speed = 1.5; color = '#44ff44'; radius = 15; damage = 10; break;
-                    case 'strong': hp = 8; speed = 1; color = '#ff4444'; radius = 20; damage = 20; break;
-                    case 'fast': hp = 2; speed = 3; color = '#ffff00'; radius = 12; damage = 8; break;
+                    case 'normal': hp = 3; speed = 1.2; color = '#44ff44'; radius = 20; damage = 10; break;
+                    case 'strong': hp = 8; speed = 0.8; color = '#ff4444'; radius = 25; damage = 20; break;
+                    case 'fast': hp = 2; speed = 2.5; color = '#ffff00'; radius = 15; damage = 8; break;
                 }
                 
-                enemies.push({
-                    x: x, y: y, radius: radius, hp: hp, maxHp: hp,
-                    speed: speed, color: color, type: type, damage: damage
-                });
+                enemies.push({ x, y, radius, hp, maxHp: hp, speed, color, type, damage });
             }
             
-            // Boss
             enemies.push({
-                x: 400, y: 400, radius: 30, hp: 25, maxHp: 25,
-                speed: 0.8, color: '#ff00ff', type: 'boss', damage: 35
+                x: 400, y: 400, radius: 35,
+                hp: 25, maxHp: 25, speed: 0.6,
+                color: '#ff00ff', type: 'boss', damage: 35
             });
             
             player.x = 400;
             player.y = 300;
+            player.angle = -Math.PI / 2;
             currentLevel = 'wasteland';
             setMessage("☢️ Ermo - Sobreviva e explore!");
+        }
+        
+        // =========================================
+        // RAYCASTING
+        // =========================================
+        function castRay(angle) {
+            let cos = Math.cos(angle);
+            let sin = Math.sin(angle);
+            let distance = 0;
+            let hitWall = null;
+            let hitEnemy = null;
+            
+            while (distance < MAX_DEPTH) {
+                distance += 2;
+                let testX = player.x + cos * distance;
+                let testY = player.y + sin * distance;
+                
+                for (let wall of walls) {
+                    if (testX >= wall.x && testX <= wall.x + wall.width &&
+                        testY >= wall.y && testY <= wall.y + wall.height) {
+                        hitWall = wall;
+                        break;
+                    }
+                }
+                
+                if (!hitWall && door) {
+                    if (testX >= door.x && testX <= door.x + door.width &&
+                        testY >= door.y && testY <= door.y + door.height) {
+                        hitWall = door;
+                        break;
+                    }
+                }
+                
+                if (!hitWall && !hitEnemy) {
+                    for (let enemy of enemies) {
+                        let dx = testX - enemy.x;
+                        let dy = testY - enemy.y;
+                        if (dx * dx + dy * dy < enemy.radius * enemy.radius) {
+                            hitEnemy = enemy;
+                            break;
+                        }
+                    }
+                }
+                
+                if (hitWall) break;
+            }
+            
+            return {
+                distance: distance,
+                wall: hitWall,
+                enemy: hitEnemy,
+                angle: angle
+            };
         }
         
         // =========================================
@@ -411,9 +473,16 @@
         function startGame() {
             gameStarted = true;
             menu.style.display = 'none';
+            crosshair.style.display = 'block';
+            canvas.style.cursor = 'none';
             initVault();
             updateUI();
             setMessage("🏚️ Vault 13 - Encontre a porta amarela!");
+            
+            // Centralizar mouse
+            mouseX = canvas.width / 2;
+            mouseY = canvas.height / 2;
+            lastMouseX = mouseX;
         }
         
         function shoot() {
@@ -433,23 +502,62 @@
                 updateUI();
             }
             
-            const angle = player.angle;
-            const bulletCount = currentWeapon === 2 ? 5 : 1;
+            // Verificar hit
+            const spread = currentWeapon === 2 ? 0.1 : 0.03;
+            const randomAngle = player.angle + (Math.random() - 0.5) * spread;
+            const ray = castRay(randomAngle);
             
-            for (let i = 0; i < bulletCount; i++) {
-                const spread = (weapon.spread || 0) * (Math.random() - 0.5) * 0.3;
-                const bulletAngle = angle + spread;
+            if (ray.enemy && ray.distance < 300) {
+                ray.enemy.hp -= weapon.damage;
                 
-                bullets.push({
-                    x: player.x,
-                    y: player.y,
-                    vx: Math.cos(bulletAngle) * weapon.bulletSpeed,
-                    vy: Math.sin(bulletAngle) * weapon.bulletSpeed,
-                    radius: weapon.bulletSize,
-                    color: weapon.color,
-                    damage: weapon.damage
-                });
+                if (ray.enemy.hp <= 0) {
+                    const index = enemies.indexOf(ray.enemy);
+                    if (index > -1) {
+                        const deadEnemy = enemies[index];
+                        enemies.splice(index, 1);
+                        setMessage("💀 Inimigo eliminado!");
+                        
+                        if (Math.random() > 0.6) {
+                            items.push({
+                                x: deadEnemy.x, y: deadEnemy.y,
+                                type: 'scrap', color: '#cccccc', radius: 10
+                            });
+                        }
+                        if (Math.random() > 0.8) {
+                            items.push({
+                                x: deadEnemy.x + 10, y: deadEnemy.y,
+                                type: 'ammo_pack', color: '#ffaa00', radius: 10
+                            });
+                        }
+                    }
+                }
             }
+            
+            // Muzzle flash
+            createMuzzleFlash();
+        }
+        
+        function createMuzzleFlash() {
+            const flash = document.createElement('div');
+            flash.style.cssText = `
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 100px;
+                height: 100px;
+                background: radial-gradient(circle, rgba(255,255,0,0.8), transparent);
+                border-radius: 50%;
+                z-index: 6;
+                pointer-events: none;
+            `;
+            document.getElementById('game-container').appendChild(flash);
+            
+            setTimeout(() => {
+                flash.style.opacity = '0';
+                flash.style.transition = 'opacity 0.1s';
+                setTimeout(() => flash.remove(), 100);
+            }, 20);
         }
         
         function equipWeapon(id) {
@@ -473,7 +581,7 @@
         }
         
         function updateUI() {
-            document.getElementById('hp-count').innerText = player.hp;
+            document.getElementById('hp-count').innerText = Math.floor(player.hp);
             document.getElementById('armor-count').innerText = player.armor;
             document.getElementById('weapon-status').innerText = weapons[currentWeapon].name;
             document.getElementById('stimpak-count').innerText = inventory.stimpak;
@@ -482,10 +590,14 @@
             document.getElementById('inv-scrap').innerText = inventory.scrap;
             document.getElementById('inv-water').innerText = inventory.water;
             document.getElementById('inv-stimpak').innerText = inventory.stimpak;
+            
+            const hpElement = document.getElementById('hp-count');
+            if (player.hp <= 25) hpElement.style.color = '#ff4444';
+            else if (player.hp <= 50) hpElement.style.color = '#ffaa00';
+            else hpElement.style.color = '#39ff14';
         }
         
         function interact() {
-            // Verificar porta
             if (door && currentLevel === 'vault') {
                 const dx = player.x - (door.x + door.width/2);
                 const dy = player.y - (door.y + door.height/2);
@@ -497,14 +609,13 @@
                 }
             }
             
-            // Coletar itens próximos
             for (let i = items.length - 1; i >= 0; i--) {
                 const item = items[i];
                 const dx = player.x - item.x;
                 const dy = player.y - item.y;
                 const dist = Math.sqrt(dx*dx + dy*dy);
                 
-                if (dist < 30) {
+                if (dist < 35) {
                     const type = item.type;
                     items.splice(i, 1);
                     
@@ -533,7 +644,7 @@
         // =========================================
         // COLISÕES
         // =========================================
-        function checkWallCollision(x, y, radius) {
+        function checkCollision(x, y, radius) {
             for (let wall of walls) {
                 const closestX = Math.max(wall.x, Math.min(x, wall.x + wall.width));
                 const closestY = Math.max(wall.y, Math.min(y, wall.y + wall.height));
@@ -553,134 +664,98 @@
         function update() {
             if (!gameStarted || inventoryOpen) return;
             
-            // Movimento do jogador
+            // MOVIMENTO DO MOUSE PARA ROTAÇÃO
+            const mouseDeltaX = mouseX - lastMouseX;
+            if (Math.abs(mouseDeltaX) > 0) {
+                player.angle += mouseDeltaX * player.mouseSensitivity;
+                lastMouseX = mouseX;
+            }
+            
+            // Manter ângulo entre 0 e 2PI
+            if (player.angle < 0) player.angle += Math.PI * 2;
+            if (player.angle > Math.PI * 2) player.angle -= Math.PI * 2;
+            
+            // MOVIMENTO COM TECLADO
             let moveX = 0;
             let moveY = 0;
+            let isMoving = false;
             
-            if (keys['w'] || keys['arrowup']) moveY -= player.speed;
-            if (keys['s'] || keys['arrowdown']) moveY += player.speed;
-            if (keys['a'] || keys['arrowleft']) moveX -= player.speed;
-            if (keys['d'] || keys['arrowright']) moveX += player.speed;
-            
-            // Normalizar movimento diagonal
-            if (moveX !== 0 && moveY !== 0) {
-                moveX *= 0.707;
-                moveY *= 0.707;
+            if (keys['w'] || keys['arrowup']) {
+                moveX += Math.cos(player.angle) * player.speed;
+                moveY += Math.sin(player.angle) * player.speed;
+                isMoving = true;
+            }
+            if (keys['s'] || keys['arrowdown']) {
+                moveX -= Math.cos(player.angle) * player.speed;
+                moveY -= Math.sin(player.angle) * player.speed;
+                isMoving = true;
+            }
+            if (keys['a'] || keys['arrowleft']) {
+                moveX += Math.cos(player.angle - Math.PI/2) * player.speed;
+                moveY += Math.sin(player.angle - Math.PI/2) * player.speed;
+                isMoving = true;
+            }
+            if (keys['d'] || keys['arrowright']) {
+                moveX += Math.cos(player.angle + Math.PI/2) * player.speed;
+                moveY += Math.sin(player.angle + Math.PI/2) * player.speed;
+                isMoving = true;
             }
             
-            // Tentar mover em X
-            if (!checkWallCollision(player.x + moveX, player.y, player.radius)) {
-                player.x += moveX;
+            // Aplicar movimento com colisão
+            if (isMoving) {
+                // Tentar mover em X
+                if (!checkCollision(player.x + moveX, player.y, 15)) {
+                    player.x += moveX;
+                }
+                // Tentar mover em Y
+                if (!checkCollision(player.x, player.y + moveY, 15)) {
+                    player.y += moveY;
+                }
             }
             
-            // Tentar mover em Y
-            if (!checkWallCollision(player.x, player.y + moveY, player.radius)) {
-                player.y += moveY;
-            }
-            
-            // Limitar ao canvas
-            player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, player.x));
-            player.y = Math.max(player.radius, Math.min(canvas.height - player.radius, player.y));
-            
-            // Ângulo do jogador (mirar no mouse)
-            player.angle = Math.atan2(mouseY - player.y, mouseX - player.x);
+            // Limites do canvas
+            player.x = Math.max(20, Math.min(780, player.x));
+            player.y = Math.max(20, Math.min(580, player.y));
             
             // Atirar
             if (mouseDown) {
                 shoot();
             }
             
-            // Atualizar balas
-            for (let i = bullets.length - 1; i >= 0; i--) {
-                const bullet = bullets[i];
-                bullet.x += bullet.vx;
-                bullet.y += bullet.vy;
-                
-                // Remover balas fora da tela
-                if (bullet.x < 0 || bullet.x > canvas.width || bullet.y < 0 || bullet.y > canvas.height) {
-                    bullets.splice(i, 1);
-                    continue;
-                }
-                
-                // Verificar colisão com paredes
-                if (checkWallCollision(bullet.x, bullet.y, bullet.radius)) {
-                    bullets.splice(i, 1);
-                    continue;
-                }
-                
-                // Verificar colisão com inimigos
-                let hit = false;
-                for (let j = enemies.length - 1; j >= 0; j--) {
-                    const enemy = enemies[j];
-                    const dx = bullet.x - enemy.x;
-                    const dy = bullet.y - enemy.y;
-                    const dist = Math.sqrt(dx*dx + dy*dy);
-                    
-                    if (dist < enemy.radius + bullet.radius) {
-                        enemy.hp -= bullet.damage;
-                        hit = true;
-                        
-                        if (enemy.hp <= 0) {
-                            enemies.splice(j, 1);
-                            setMessage("💀 Inimigo eliminado!");
-                            
-                            // Chance de dropar itens
-                            if (Math.random() > 0.6) {
-                                items.push({
-                                    x: enemy.x,
-                                    y: enemy.y,
-                                    type: 'scrap',
-                                    color: '#cccccc',
-                                    radius: 8
-                                });
-                            }
-                            if (Math.random() > 0.8) {
-                                items.push({
-                                    x: enemy.x + 10,
-                                    y: enemy.y,
-                                    type: 'ammo_pack',
-                                    color: '#ffaa00',
-                                    radius: 8
-                                });
-                            }
-                        }
-                        break;
-                    }
-                }
-                
-                if (hit) {
-                    bullets.splice(i, 1);
-                }
-            }
-            
             // Atualizar inimigos
+            const now = Date.now();
             for (let enemy of enemies) {
                 const dx = player.x - enemy.x;
                 const dy = player.y - enemy.y;
                 const dist = Math.sqrt(dx*dx + dy*dy);
                 
-                if (dist < 300 && dist > 20) {
-                    const moveX = (dx / dist) * enemy.speed;
-                    const moveY = (dy / dist) * enemy.speed;
+                if (dist < 300 && dist > 25) {
+                    const moveAmount = enemy.speed;
+                    const moveX = (dx / dist) * moveAmount;
+                    const moveY = (dy / dist) * moveAmount;
                     
-                    if (!checkWallCollision(enemy.x + moveX, enemy.y, enemy.radius)) {
+                    if (!checkCollision(enemy.x + moveX, enemy.y, enemy.radius)) {
                         enemy.x += moveX;
                     }
-                    if (!checkWallCollision(enemy.x, enemy.y + moveY, enemy.radius)) {
+                    if (!checkCollision(enemy.x, enemy.y + moveY, enemy.radius)) {
                         enemy.y += moveY;
                     }
                 }
                 
-                // Dano ao jogador
-                if (dist < player.radius + enemy.radius) {
+                if (dist < 30 && now - lastDamageTime > 500) {
                     const damage = Math.max(1, enemy.damage - player.armor * 0.3);
-                    player.hp -= damage * 0.016; // Dano por frame
+                    player.hp -= damage;
+                    lastDamageTime = now;
+                    
+                    damageFlash.style.opacity = '1';
+                    setTimeout(() => { damageFlash.style.opacity = '0'; }, 100);
+                    
+                    updateUI();
                     
                     if (player.hp <= 0) {
                         alert("💀 Você morreu! Recarregue a página para tentar novamente.");
                         location.reload();
                     }
-                    updateUI();
                 }
             }
             
@@ -693,179 +768,191 @@
             }
         }
         
-        function draw() {
-            // Limpar tela
-            ctx.fillStyle = currentLevel === 'vault' ? '#1a1a2e' : '#87CEEB';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        function draw3DView() {
+            // Céu
+            const skyGradient = ctx.createLinearGradient(0, 0, 0, canvas.height/2);
+            if (currentLevel === 'vault') {
+                skyGradient.addColorStop(0, '#1a1a2e');
+                skyGradient.addColorStop(1, '#2a2a3e');
+            } else {
+                skyGradient.addColorStop(0, '#87CEEB');
+                skyGradient.addColorStop(1, '#B0C4DE');
+            }
+            ctx.fillStyle = skyGradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height/2);
             
-            // Grade do chão
-            ctx.strokeStyle = currentLevel === 'vault' ? 'rgba(90, 106, 90, 0.2)' : 'rgba(139, 115, 85, 0.2)';
+            // Chão
+            const floorGradient = ctx.createLinearGradient(0, canvas.height/2, 0, canvas.height);
+            if (currentLevel === 'vault') {
+                floorGradient.addColorStop(0, '#3a3a3a');
+                floorGradient.addColorStop(1, '#1a1a1a');
+            } else {
+                floorGradient.addColorStop(0, '#C4A46C');
+                floorGradient.addColorStop(1, '#8B7355');
+            }
+            ctx.fillStyle = floorGradient;
+            ctx.fillRect(0, canvas.height/2, canvas.width, canvas.height/2);
+            
+            // Raycasting
+            const rayAngleStep = FOV / NUM_RAYS;
+            const startAngle = player.angle - FOV / 2;
+            
+            for (let i = 0; i < NUM_RAYS; i++) {
+                const rayAngle = startAngle + i * rayAngleStep;
+                const ray = castRay(rayAngle);
+                
+                const correctedDistance = ray.distance * Math.cos(rayAngle - player.angle);
+                const wallHeight = Math.min(canvas.height, (canvas.height / correctedDistance) * 200);
+                const wallTop = (canvas.height - wallHeight) / 2;
+                
+                const columnWidth = canvas.width / NUM_RAYS;
+                const x = i * columnWidth;
+                const brightness = Math.max(0.2, 1 - correctedDistance / MAX_DEPTH);
+                
+                if (ray.wall) {
+                    let wallColor;
+                    if (ray.wall === door) {
+                        wallColor = `rgb(${Math.floor(255 * brightness)}, ${Math.floor(170 * brightness)}, 0)`;
+                    } else {
+                        const r = parseInt(ray.wall.color.slice(1,3), 16);
+                        const g = parseInt(ray.wall.color.slice(3,5), 16);
+                        const b = parseInt(ray.wall.color.slice(5,7), 16);
+                        wallColor = `rgb(${Math.floor(r * brightness)}, ${Math.floor(g * brightness)}, ${Math.floor(b * brightness)})`;
+                    }
+                    
+                    ctx.fillStyle = wallColor;
+                    ctx.fillRect(x, wallTop, columnWidth + 1, wallHeight);
+                }
+                
+                if (ray.enemy && (!ray.wall || ray.distance < correctedDistance)) {
+                    const enemyDist = Math.sqrt(
+                        Math.pow(ray.enemy.x - player.x, 2) + 
+                        Math.pow(ray.enemy.y - player.y, 2)
+                    );
+                    const enemyHeight = Math.min(canvas.height, (canvas.height / enemyDist) * 150);
+                    const enemyTop = (canvas.height - enemyHeight) / 2;
+                    
+                    const enemyBrightness = Math.max(0.3, 1 - enemyDist / MAX_DEPTH);
+                    const r = parseInt(ray.enemy.color.slice(1,3), 16);
+                    const g = parseInt(ray.enemy.color.slice(3,5), 16);
+                    const b = parseInt(ray.enemy.color.slice(5,7), 16);
+                    
+                    ctx.fillStyle = `rgb(${Math.floor(r * enemyBrightness)}, ${Math.floor(g * enemyBrightness)}, ${Math.floor(b * enemyBrightness)})`;
+                    ctx.fillRect(x, enemyTop, columnWidth + 1, enemyHeight);
+                }
+            }
+        }
+        
+        function drawWeapon() {
+            const weapon = weapons[currentWeapon];
+            const centerX = canvas.width / 2;
+            const weaponY = canvas.height - 120;
+            
+            // Corpo da arma
+            ctx.fillStyle = '#555';
+            ctx.fillRect(centerX - 25, weaponY, 50, 90);
+            
+            // Cano
+            ctx.fillStyle = '#333';
+            ctx.fillRect(centerX - 4, weaponY - 30, 8, 40);
+            
+            // Detalhes
+            ctx.fillStyle = '#777';
+            ctx.fillRect(centerX - 20, weaponY + 15, 40, 15);
+            
+            // Nome da arma
+            ctx.fillStyle = '#39ff14';
+            ctx.font = '12px Courier New';
+            ctx.textAlign = 'center';
+            ctx.fillText(weapon.name, centerX, weaponY - 40);
+        }
+        
+        function drawMinimap() {
+            const mapSize = 150;
+            const mapX = canvas.width - mapSize - 10;
+            const mapY = 10;
+            
+            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            ctx.fillRect(mapX, mapY, mapSize, mapSize);
+            ctx.strokeStyle = '#39ff14';
             ctx.lineWidth = 1;
-            for (let x = 0; x < canvas.width; x += 40) {
-                ctx.beginPath();
-                ctx.moveTo(x, 0);
-                ctx.lineTo(x, canvas.height);
-                ctx.stroke();
-            }
-            for (let y = 0; y < canvas.height; y += 40) {
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(canvas.width, y);
-                ctx.stroke();
-            }
+            ctx.strokeRect(mapX, mapY, mapSize, mapSize);
             
-            // Desenhar paredes
+            const scale = mapSize / 800;
+            
+            // Paredes
+            ctx.fillStyle = '#555';
             for (let wall of walls) {
-                ctx.fillStyle = wall.color;
-                ctx.fillRect(wall.x, wall.y, wall.width, wall.height);
-                
-                // Borda
-                ctx.strokeStyle = 'rgba(0,0,0,0.3)';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(wall.x, wall.y, wall.width, wall.height);
+                ctx.fillRect(
+                    mapX + wall.x * scale,
+                    mapY + wall.y * scale,
+                    wall.width * scale,
+                    wall.height * scale
+                );
             }
             
-            // Desenhar porta
+            // Porta
             if (door) {
-                ctx.fillStyle = door.color;
-                ctx.fillRect(door.x, door.y, door.width, door.height);
-                ctx.strokeStyle = '#ffdd00';
-                ctx.lineWidth = 3;
-                ctx.strokeRect(door.x, door.y, door.width, door.height);
-                
-                // Brilho pulsante
-                const pulse = Math.sin(Date.now() * 0.005) * 0.3 + 0.5;
-                ctx.fillStyle = `rgba(255, 170, 0, ${pulse})`;
-                ctx.fillRect(door.x - 2, door.y - 2, door.width + 4, door.height + 4);
+                ctx.fillStyle = '#ffaa00';
+                ctx.fillRect(
+                    mapX + door.x * scale,
+                    mapY + door.y * scale,
+                    door.width * scale,
+                    door.height * scale
+                );
             }
             
-            // Desenhar itens
-            for (let item of items) {
-                const floatY = Math.sin(Date.now() * 0.003 + item.x) * 3;
-                
-                ctx.fillStyle = item.color;
-                ctx.beginPath();
-                ctx.arc(item.x, item.y + floatY, item.radius, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Brilho
-                ctx.fillStyle = 'rgba(255,255,255,0.3)';
-                ctx.beginPath();
-                ctx.arc(item.x, item.y + floatY, item.radius * 0.5, 0, Math.PI * 2);
-                ctx.fill();
-            }
-            
-            // Desenhar inimigos
+            // Inimigos
             for (let enemy of enemies) {
-                // Sombra
-                ctx.fillStyle = 'rgba(0,0,0,0.3)';
-                ctx.beginPath();
-                ctx.arc(enemy.x + 2, enemy.y + 2, enemy.radius, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Corpo
                 ctx.fillStyle = enemy.color;
                 ctx.beginPath();
-                ctx.arc(enemy.x, enemy.y, enemy.radius, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Olhos
-                const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
-                const eyeX = enemy.x + Math.cos(angle) * enemy.radius * 0.4;
-                const eyeY = enemy.y + Math.sin(angle) * enemy.radius * 0.4;
-                
-                ctx.fillStyle = '#ff0000';
-                ctx.beginPath();
-                ctx.arc(eyeX - 3, eyeY - 2, 3, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.arc(eyeX + 3, eyeY - 2, 3, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Barra de HP
-                const hpPercent = enemy.hp / enemy.maxHp;
-                const barWidth = enemy.radius * 2;
-                const barHeight = 4;
-                const barX = enemy.x - barWidth/2;
-                const barY = enemy.y - enemy.radius - 10;
-                
-                ctx.fillStyle = '#000000';
-                ctx.fillRect(barX, barY, barWidth, barHeight);
-                ctx.fillStyle = hpPercent > 0.5 ? '#00ff00' : hpPercent > 0.25 ? '#ffff00' : '#ff0000';
-                ctx.fillRect(barX, barY, barWidth * hpPercent, barHeight);
-            }
-            
-            // Desenhar balas
-            for (let bullet of bullets) {
-                ctx.fillStyle = bullet.color;
-                ctx.beginPath();
-                ctx.arc(bullet.x, bullet.y, bullet.radius, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Rastro
-                ctx.fillStyle = 'rgba(255,255,255,0.5)';
-                ctx.beginPath();
-                ctx.arc(bullet.x - bullet.vx * 0.5, bullet.y - bullet.vy * 0.5, bullet.radius * 0.7, 0, Math.PI * 2);
+                ctx.arc(
+                    mapX + enemy.x * scale,
+                    mapY + enemy.y * scale,
+                    Math.max(2, enemy.radius * scale),
+                    0, Math.PI * 2
+                );
                 ctx.fill();
             }
             
-            // Desenhar jogador
-            // Sombra
-            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            // Itens
+            for (let item of items) {
+                ctx.fillStyle = item.color;
+                ctx.beginPath();
+                ctx.arc(mapX + item.x * scale, mapY + item.y * scale, 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Jogador
+            ctx.fillStyle = '#00ff00';
             ctx.beginPath();
-            ctx.arc(player.x + 3, player.y + 3, player.radius, 0, Math.PI * 2);
+            ctx.arc(mapX + player.x * scale, mapY + player.y * scale, 4, 0, Math.PI * 2);
             ctx.fill();
             
-            // Corpo
-            ctx.fillStyle = '#2c3e50';
-            ctx.beginPath();
-            ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // Borda
-            ctx.strokeStyle = '#39ff14';
+            // Direção
+            ctx.strokeStyle = '#ff0000';
             ctx.lineWidth = 2;
             ctx.beginPath();
-            ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
-            ctx.stroke();
-            
-            // Arma
-            const gunX = player.x + Math.cos(player.angle) * player.radius;
-            const gunY = player.y + Math.sin(player.angle) * player.radius;
-            
-            ctx.strokeStyle = weapons[currentWeapon].color;
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.moveTo(gunX, gunY);
+            ctx.moveTo(mapX + player.x * scale, mapY + player.y * scale);
             ctx.lineTo(
-                gunX + Math.cos(player.angle) * 15,
-                gunY + Math.sin(player.angle) * 15
+                mapX + (player.x + Math.cos(player.angle) * 30) * scale,
+                mapY + (player.y + Math.sin(player.angle) * 30) * scale
             );
             ctx.stroke();
+        }
+        
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            // Olhos
-            const eyeX = player.x + Math.cos(player.angle) * 5;
-            const eyeY = player.y + Math.sin(player.angle) * 5;
-            
-            ctx.fillStyle = '#ffffff';
-            ctx.beginPath();
-            ctx.arc(eyeX - 3, eyeY - 3, 3, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.arc(eyeX + 3, eyeY - 3, 3, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // Pupilas
-            ctx.fillStyle = '#000000';
-            ctx.beginPath();
-            ctx.arc(eyeX - 2, eyeY - 3, 1.5, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.arc(eyeX + 4, eyeY - 3, 1.5, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // Atualizar mensagem
-            document.getElementById('message-box').innerText = message;
+            if (gameStarted) {
+                draw3DView();
+                drawWeapon();
+                drawMinimap();
+                document.getElementById('message-box').innerText = message;
+            } else {
+                ctx.fillStyle = '#1a1a2e';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
         }
         
         function gameLoop() {
@@ -880,6 +967,8 @@
         document.addEventListener('keydown', (e) => {
             keys[e.key.toLowerCase()] = true;
             
+            if (!gameStarted) return;
+            
             switch(e.key) {
                 case '1': equipWeapon(1); break;
                 case '2': equipWeapon(2); break;
@@ -887,7 +976,7 @@
                 case '4': equipWeapon(4); break;
                 case '5': equipWeapon(5); break;
                 case 'h':
-                    if (gameStarted && inventory.stimpak > 0 && player.hp < 100) {
+                    if (inventory.stimpak > 0 && player.hp < 100) {
                         inventory.stimpak--;
                         player.hp = Math.min(100, player.hp + 40);
                         updateUI();
@@ -897,13 +986,12 @@
                 case 'i':
                 case 'Tab':
                     e.preventDefault();
-                    if (gameStarted) {
-                        inventoryOpen = !inventoryOpen;
-                        document.getElementById('inventory-overlay').style.display = inventoryOpen ? 'block' : 'none';
-                    }
+                    inventoryOpen = !inventoryOpen;
+                    document.getElementById('inventory-overlay').style.display = inventoryOpen ? 'block' : 'none';
+                    canvas.style.cursor = inventoryOpen ? 'default' : 'none';
                     break;
                 case 'e':
-                    if (gameStarted) interact();
+                    interact();
                     break;
             }
         });
@@ -912,17 +1000,31 @@
             keys[e.key.toLowerCase()] = false;
         });
         
+        // MOUSE - CORRIGIDO
         canvas.addEventListener('mousemove', (e) => {
-            const rect = canvas.getBoundingClientRect();
-            mouseX = e.clientX - rect.left;
-            mouseY = e.clientY - rect.top;
+            if (gameStarted && !inventoryOpen) {
+                const rect = canvas.getBoundingClientRect();
+                mouseX = e.clientX - rect.left;
+                mouseY = e.clientY - rect.top;
+                
+                // Atualizar lastMouseX para movimento relativo
+                if (Math.abs(mouseX - lastMouseX) > 0) {
+                    player.angle += (mouseX - lastMouseX) * player.mouseSensitivity;
+                    lastMouseX = mouseX;
+                    
+                    // Manter ângulo válido
+                    if (player.angle < 0) player.angle += Math.PI * 2;
+                    if (player.angle > Math.PI * 2) player.angle -= Math.PI * 2;
+                }
+            }
         });
         
         canvas.addEventListener('mousedown', (e) => {
             if (e.button === 0) {
-                mouseDown = true;
                 if (!gameStarted) {
                     startGame();
+                } else if (!inventoryOpen) {
+                    mouseDown = true;
                 }
             }
         });
@@ -933,7 +1035,6 @@
             }
         });
         
-        // Também permitir clicar no menu para iniciar
         menu.addEventListener('click', () => {
             if (!gameStarted) {
                 startGame();
@@ -944,7 +1045,7 @@
             e.preventDefault();
         });
         
-        // Prevenir scroll com teclas
+        // Prevenir scroll
         window.addEventListener('keydown', (e) => {
             if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
                 e.preventDefault();
@@ -955,7 +1056,8 @@
         updateUI();
         gameLoop();
         
-        console.log('Jogo carregado! Clique na tela ou no menu para começar.');
+        console.log('🎮 Vault Explorer FPS pronto! Clique na tela para jogar.');
+        console.log('Use WASD para mover e o mouse para olhar ao redor.');
     </script>
 </body>
 </html>
