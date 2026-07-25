@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vault Explorer - V6</title>
+    <title>Vault Explorer - V7 Expanded</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Courier New', Courier, monospace; color: #39ff14; user-select: none; }
         .scanlines { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.25) 50%), linear-gradient(90deg, rgba(255,0,0,0.06), rgba(0,255,0,0.02), rgba(0,0,255,0.06)); background-size: 100% 4px, 3px 100%; pointer-events: none; z-index: 11; opacity: 0.3; }
         #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; padding: 20px; box-sizing: border-box; z-index: 10; text-shadow: 0 0 5px #39ff14; }
         #hud { display: flex; justify-content: space-between; border-bottom: 2px solid #39ff14; padding-bottom: 10px; font-weight: bold; font-size: 1.1rem; }
         #message-box { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); border: 1px solid #39ff14; background: rgba(0, 20, 0, 0.85); padding: 10px 20px; text-align: center; font-size: 1rem; min-width: 350px; }
-        #inventory-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 500px; height: 420px; background: rgba(0, 20, 0, 0.95); border: 2px solid #39ff14; box-shadow: 0 0 15px rgba(57, 255, 20, 0.4); display: none; flex-direction: column; padding: 20px; z-index: 30; pointer-events: auto; }
+        #inventory-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 600px; height: 520px; background: rgba(0, 20, 0, 0.95); border: 2px solid #39ff14; box-shadow: 0 0 15px rgba(57, 255, 20, 0.4); display: none; flex-direction: column; padding: 20px; z-index: 30; pointer-events: auto; }
         #inventory-overlay h2 { margin-top: 0; border-bottom: 2px solid #39ff14; padding-bottom: 5px; text-align: center; }
         .inv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
-        .inv-item { border: 1px dashed #39ff14; padding: 10px; background: rgba(0, 40, 0, 0.5); font-size: 0.9rem; }
+        .inv-item { border: 1px dashed #39ff14; padding: 10px; background: rgba(0, 40, 0, 0.5); font-size: 0.85rem; }
         .inv-footer { margin-top: auto; text-align: center; font-size: 0.8rem; opacity: 0.8; }
         #menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 10, 0, 0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 20; cursor: pointer; text-shadow: 0 0 10px #39ff14; }
         #menu h1 { font-size: 3rem; margin-bottom: 10px; }
@@ -30,9 +30,9 @@
     
     <div id="ui">
         <div id="hud">
-            <div>HP: <span id="hp-count">100</span> | STIMPAK: <span id="stimpak-count">0</span></div>
+            <div>HP: <span id="hp-count">100</span> | ARMADURA: <span id="armor-count">0</span></div>
             <div>ARMA: <span id="weapon-status">Pistola 10mm</span></div>
-            <div>SUCATA: <span id="scrap-count">0</span> | ÁGUA: <span id="water-count">0</span></div>
+            <div>MUNIÇÃO: <span id="ammo-count">∞</span> | STIMPAK: <span id="stimpak-count">0</span></div>
         </div>
         <div id="message-box">Encontre a porta amarela para sair. [E] Interagir | [MOUSE] Atirar</div>
     </div>
@@ -43,22 +43,38 @@
             <div class="inv-item">
                 <strong>[ARMAS]</strong><br>
                 [1] Pistola 10mm<br>
-                [2] <span id="inv-laser">Rifle a Laser (Bloqueado)</span>
+                [2] <span id="inv-shotgun">Escopeta (Bloqueado)</span><br>
+                [3] <span id="inv-laser">Rifle Laser (Bloqueado)</span><br>
+                [4] <span id="inv-plasma">Rifle Plasma (Bloqueado)</span><br>
+                [5] <span id="inv-minigun">Metralhadora (Bloqueado)</span>
             </div>
             <div class="inv-item">
                 <strong>[INVENTÁRIO]</strong><br>
                 Sucata: <span id="inv-scrap">0</span><br>
                 Água: <span id="inv-water">0</span><br>
-                Stimpaks [H]: <span id="inv-stimpak">0</span>
+                Stimpaks [H]: <span id="inv-stimpak">0</span><br>
+                Munição: <span id="inv-ammo">∞</span>
+            </div>
+            <div class="inv-item">
+                <strong>[ARMADURA]</strong><br>
+                Capacete: <span id="inv-helmet">Nenhum</span><br>
+                Colete: <span id="inv-vest">Nenhum</span><br>
+                Defesa Total: <span id="inv-defense">0</span>
+            </div>
+            <div class="inv-item">
+                <strong>[ACESSÓRIOS]</strong><br>
+                Mochila: <span id="inv-backpack">Nenhuma</span><br>
+                Botas: <span id="inv-boots">Nenhuma</span><br>
+                Luva: <span id="inv-glove">Nenhuma</span>
             </div>
         </div>
         <div class="inv-footer">Pressione [I] para Fechar</div>
     </div>
 
     <div id="menu">
-        <h1>ROBCO INDUSTRIES - V6</h1>
+        <h1>ROBCO INDUSTRIES - V7</h1>
         <p>[ CLIQUE NA TELA PARA JOGAR ]</p>
-        <p style="font-size: 0.9rem;">WASD: Mover | E: Interagir | Mouse: Atirar | H: Curar | 1/2: Trocar Armas</p>
+        <p style="font-size: 0.9rem;">WASD: Mover | E: Interagir | Mouse: Atirar | H: Curar | 1-5: Trocar Armas | I: Inventário</p>
     </div>
 
     <script type="importmap">
@@ -95,13 +111,21 @@
         scene.add(camera);
 
         // =========================================
-        // Armas (Com MeshBasicMaterial para alta visibilidade)
+        // Sistema de Armas Expandido
         // =========================================
         const weapons = new THREE.Group();
         camera.add(weapons);
-        weapons.position.set(0.3, -0.3, -0.5); 
+        weapons.position.set(0.3, -0.3, -0.5);
 
-        // 1. Pistola
+        const weaponConfigs = {
+            1: { name: 'Pistola 10mm', damage: 1, ammoType: 'pistol' },
+            2: { name: 'Escopeta', damage: 3, ammoType: 'shotgun' },
+            3: { name: 'Rifle Laser', damage: 2, ammoType: 'energy' },
+            4: { name: 'Rifle Plasma', damage: 4, ammoType: 'plasma' },
+            5: { name: 'Metralhadora', damage: 1.5, ammoType: 'heavy' }
+        };
+
+        // Pistola
         const pistol = new THREE.Group();
         const pBody = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.15, 0.35), new THREE.MeshBasicMaterial({ color: 0x555555 }));
         const pHandle = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.22, 0.12), new THREE.MeshBasicMaterial({ color: 0x332211 }));
@@ -110,7 +134,19 @@
         pistol.add(pBody, pHandle);
         weapons.add(pistol);
 
-        // 2. Rifle a Laser
+        // Escopeta
+        const shotgun = new THREE.Group();
+        const sBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.8, 8), new THREE.MeshBasicMaterial({ color: 0x444444 }));
+        sBarrel.rotation.x = Math.PI / 2;
+        sBarrel.position.set(0, 0.05, -0.5);
+        const sBody = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.2, 0.6), new THREE.MeshBasicMaterial({ color: 0x8B4513 }));
+        const sStock = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.25, 0.3), new THREE.MeshBasicMaterial({ color: 0x654321 }));
+        sStock.position.set(0, -0.1, 0.35);
+        shotgun.add(sBarrel, sBody, sStock);
+        shotgun.visible = false;
+        weapons.add(shotgun);
+
+        // Rifle Laser
         const laserRifle = new THREE.Group();
         const lBody = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.22, 0.7), new THREE.MeshBasicMaterial({ color: 0x222233 }));
         const lBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.6, 8), new THREE.MeshBasicMaterial({ color: 0xff0000 }));
@@ -119,20 +155,63 @@
         const lStock = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.25, 0.35), new THREE.MeshBasicMaterial({ color: 0xaa8800 })); 
         lStock.position.set(0, -0.1, 0.35);
         laserRifle.add(lBody, lBarrel, lStock);
-        laserRifle.visible = false; 
+        laserRifle.visible = false;
         weapons.add(laserRifle);
 
-        let hasLaserRifle = false;
+        // Rifle Plasma
+        const plasmaRifle = new THREE.Group();
+        const plBody = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.25, 0.8), new THREE.MeshBasicMaterial({ color: 0x00ff44 }));
+        const plCoil = new THREE.Mesh(new THREE.TorusGeometry(0.1, 0.03, 8, 16), new THREE.MeshBasicMaterial({ color: 0x00ffff }));
+        plCoil.position.set(0, 0.1, -0.2);
+        plasmaRifle.add(plBody, plCoil);
+        plasmaRifle.visible = false;
+        weapons.add(plasmaRifle);
+
+        // Metralhadora
+        const minigun = new THREE.Group();
+        const barrels = new THREE.Group();
+        for(let i = 0; i < 6; i++) {
+            const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.6, 6), new THREE.MeshBasicMaterial({ color: 0x666666 }));
+            barrel.position.y = Math.sin(i * Math.PI/3) * 0.08;
+            barrel.position.x = Math.cos(i * Math.PI/3) * 0.08;
+            barrels.add(barrel);
+        }
+        const mBody = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.5), new THREE.MeshBasicMaterial({ color: 0x333333 }));
+        barrels.position.z = -0.4;
+        minigun.add(mBody, barrels);
+        minigun.visible = false;
+        weapons.add(minigun);
+
+        let unlockedWeapons = { 1: true, 2: false, 3: false, 4: false, 5: false };
+        let currentWeapon = 1;
         let playerHP = 100;
+        let playerArmor = 0;
         let lastDamageTime = 0;
+        let ammo = { pistol: Infinity, shotgun: 20, energy: 30, plasma: 10, heavy: 100 };
 
         function equipWeapon(id) {
-            if (id === 1) {
-                pistol.visible = true; laserRifle.visible = false;
-                document.getElementById('weapon-status').innerText = "Pistola 10mm";
-            } else if (id === 2 && hasLaserRifle) {
-                pistol.visible = false; laserRifle.visible = true;
-                document.getElementById('weapon-status').innerText = "Rifle a Laser";
+            if (unlockedWeapons[id]) {
+                currentWeapon = id;
+                pistol.visible = (id === 1);
+                shotgun.visible = (id === 2);
+                laserRifle.visible = (id === 3);
+                plasmaRifle.visible = (id === 4);
+                minigun.visible = (id === 5);
+                document.getElementById('weapon-status').innerText = weaponConfigs[id].name;
+                document.getElementById('ammo-count').innerText = ammo[weaponConfigs[id].ammoType];
+            }
+        }
+
+        function unlockWeapon(id) {
+            unlockedWeapons[id] = true;
+            const invElements = {
+                2: 'inv-shotgun',
+                3: 'inv-laser',
+                4: 'inv-plasma',
+                5: 'inv-minigun'
+            };
+            if (invElements[id]) {
+                document.getElementById(invElements[id]).innerText = `${weaponConfigs[id].name} (Desbloqueado)`;
             }
         }
 
@@ -142,19 +221,39 @@
                 weapons.position.z += 0.1;
                 setTimeout(() => weapons.position.z -= 0.1, 100);
 
+                const ammoType = weaponConfigs[currentWeapon].ammoType;
+                if (ammo[ammoType] <= 0 && ammoType !== 'pistol') {
+                    updateMessage("Sem munição! Use pistola (1) ou encontre munição.");
+                    return;
+                }
+
+                if (ammoType !== 'pistol') {
+                    ammo[ammoType]--;
+                    document.getElementById('ammo-count').innerText = ammo[ammoType];
+                }
+
                 raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
                 const intersects = raycaster.intersectObjects(mobs, true);
                 if (intersects.length > 0) {
                     const hitMob = intersects[0].object;
-                    environmentGroup.remove(hitMob);
-                    mobs = mobs.filter(m => m !== hitMob);
-                    updateMessage("Inimigo destruído!");
+                    const damage = weaponConfigs[currentWeapon].damage;
+                    hitMob.userData.hp -= damage;
+                    
+                    if (hitMob.userData.hp <= 0) {
+                        environmentGroup.remove(hitMob);
+                        mobs = mobs.filter(m => m !== hitMob);
+                        updateMessage(`${weaponConfigs[currentWeapon].name} destruiu o inimigo!`);
+                        
+                        // Chance de dropar itens
+                        if(Math.random() > 0.7) spawnItem('scrap', hitMob.position.x, hitMob.position.z);
+                        if(Math.random() > 0.9) spawnItem('ammo_pack', hitMob.position.x, hitMob.position.z);
+                    }
                 }
             }
         });
 
         // =========================================
-        // Ambientes, Casas e Mobs
+        // Sistema de Itens e Equipamentos
         // =========================================
         let currentLevel = 'vault';
         const environmentGroup = new THREE.Group();
@@ -168,7 +267,10 @@
         let interactables = [];
         let items = [];
         let mobs = [];
-        let inventory = { scrap: 0, water: 0, stimpak: 0 };
+        let inventory = { 
+            scrap: 0, water: 0, stimpak: 0,
+            helmet: null, vest: null, backpack: null, boots: null, glove: null
+        };
 
         function clearEnvironment() {
             while(environmentGroup.children.length > 0) environmentGroup.remove(environmentGroup.children[0]); 
@@ -177,10 +279,21 @@
 
         function spawnItem(type, x, z) {
             let color, geo;
-            if(type === 'scrap') { color = 0xaaaaaa; geo = new THREE.BoxGeometry(0.4, 0.4, 0.4); }
-            else if (type === 'water') { color = 0x00aaff; geo = new THREE.CylinderGeometry(0.2, 0.2, 0.6, 8); }
-            else if (type === 'stimpak') { color = 0xff0000; geo = new THREE.BoxGeometry(0.3, 0.5, 0.1); }
-            else if (type === 'laser_rifle') { color = 0xff0000; geo = new THREE.BoxGeometry(0.8, 0.2, 0.2); } 
+            switch(type) {
+                case 'scrap': color = 0xaaaaaa; geo = new THREE.BoxGeometry(0.4, 0.4, 0.4); break;
+                case 'water': color = 0x00aaff; geo = new THREE.CylinderGeometry(0.2, 0.2, 0.6, 8); break;
+                case 'stimpak': color = 0xff0000; geo = new THREE.BoxGeometry(0.3, 0.5, 0.1); break;
+                case 'shotgun': color = 0x8B4513; geo = new THREE.BoxGeometry(1.0, 0.3, 0.3); break;
+                case 'laser_rifle': color = 0xff0000; geo = new THREE.BoxGeometry(0.8, 0.2, 0.2); break;
+                case 'plasma_rifle': color = 0x00ff44; geo = new THREE.BoxGeometry(0.9, 0.3, 0.3); break;
+                case 'minigun': color = 0x333333; geo = new THREE.CylinderGeometry(0.3, 0.3, 0.8, 8); break;
+                case 'ammo_pack': color = 0xffaa00; geo = new THREE.BoxGeometry(0.3, 0.3, 0.3); break;
+                case 'helmet': color = 0xcccccc; geo = new THREE.SphereGeometry(0.3, 8, 8); break;
+                case 'vest': color = 0x4444ff; geo = new THREE.BoxGeometry(0.5, 0.6, 0.2); break;
+                case 'backpack': color = 0x228B22; geo = new THREE.BoxGeometry(0.4, 0.5, 0.3); break;
+                case 'boots': color = 0x8B4513; geo = new THREE.BoxGeometry(0.2, 0.3, 0.4); break;
+                case 'glove': color = 0xFFD700; geo = new THREE.BoxGeometry(0.2, 0.3, 0.1); break;
+            }
 
             const item = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: color }));
             item.position.set(x, 0.4, z);
@@ -202,11 +315,34 @@
             interactables.push(chestGroup);
         }
 
-        function spawnMob(x, z) {
-            const mob = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 2, 8), new THREE.MeshBasicMaterial({ color: 0x00ff55 }));
-            mob.position.set(x, 1, z);
-            environmentGroup.add(mob);
-            mobs.push(mob);
+        function spawnMob(x, z, type = 'normal') {
+            const mobGroup = new THREE.Group();
+            let bodyColor;
+            
+            switch(type) {
+                case 'normal': bodyColor = 0x00ff55; break;
+                case 'strong': bodyColor = 0xff0000; break;
+                case 'fast': bodyColor = 0xffff00; break;
+                case 'boss': bodyColor = 0xff00ff; break;
+            }
+            
+            const body = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 2, 8), new THREE.MeshBasicMaterial({ color: bodyColor }));
+            const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 8), new THREE.MeshBasicMaterial({ color: bodyColor }));
+            head.position.y = 1.2;
+            mobGroup.add(body, head);
+            mobGroup.position.set(x, 0.6, z);
+            
+            let hp;
+            switch(type) {
+                case 'normal': hp = 1; break;
+                case 'strong': hp = 5; break;
+                case 'fast': hp = 2; break;
+                case 'boss': hp = 15; break;
+            }
+            
+            mobGroup.userData = { type: type, hp: hp, speed: type === 'fast' ? 0.15 : 0.08 };
+            environmentGroup.add(mobGroup);
+            mobs.push(mobGroup);
         }
 
         function spawnRuinedHouse(x, z) {
@@ -215,6 +351,10 @@
             const w2 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 3, 6), houseMat); w2.position.set(x + 3, 1.5, z);
             const w3 = new THREE.Mesh(new THREE.BoxGeometry(6, 3, 0.5), houseMat); w3.position.set(x, 1.5, z - 3);
             environmentGroup.add(w1, w2, w3);
+            
+            // Adicionar loot dentro das casas
+            if(Math.random() > 0.5) spawnItem('ammo_pack', x, z);
+            if(Math.random() > 0.7) spawnItem('scrap', x + 1, z + 1);
         }
 
         function initVault() {
@@ -254,7 +394,10 @@
             
             spawnItem('scrap', 0, 0);
             spawnItem('stimpak', -8, -4);
+            spawnItem('shotgun', 8, -8);
+            spawnItem('ammo_pack', -4, 4);
             spawnChest(6, -8);
+            spawnMob(-4, -4, 'normal');
             camera.position.set(0, 1.6, 8); 
         }
 
@@ -263,7 +406,7 @@
             currentLevel = 'wasteland';
             
             scene.background = new THREE.Color(0xd27d2d); 
-            scene.fog = new THREE.FogExp2(0xd27d2d, 0.025); 
+            scene.fog = new THREE.FogExp2(0xd27d2d, 0.015); 
             ambientLight.intensity = 1.2; 
             directionalLight.intensity = 2.0;
 
@@ -271,22 +414,38 @@
             floor.rotation.x = -Math.PI / 2;
             environmentGroup.add(floor);
 
-            // Gerar casas, mobs e itens no ermo
-            for(let i = 0; i < 10; i++) {
-                const rx = (Math.random() - 0.5) * 80;
-                const rz = (Math.random() - 0.5) * 80;
+            // Gerar estruturas variadas
+            for(let i = 0; i < 15; i++) {
+                const rx = (Math.random() - 0.5) * 100;
+                const rz = (Math.random() - 0.5) * 100;
                 if(Math.abs(rx) > 8 && Math.abs(rz) > 8) {
                     spawnRuinedHouse(rx, rz);
-                    spawnMob(rx + 3, rz + 3);
-                    if(Math.random() > 0.5) spawnChest(rx, rz);
+                    
+                    // Variedade de mobs
+                    const mobType = Math.random();
+                    if(mobType < 0.5) spawnMob(rx + 3, rz + 3, 'normal');
+                    else if(mobType < 0.8) spawnMob(rx - 3, rz - 2, 'strong');
+                    else if(mobType < 0.95) spawnMob(rx + 2, rz - 3, 'fast');
+                    
+                    if(Math.random() > 0.6) spawnChest(rx, rz);
                 }
             }
             
-            spawnItem('stimpak', 10, 5);
-            spawnItem('laser_rifle', 0, -8); // Rifle logo perto da saída
+            // Boss no ermo
+            spawnMob(0, -30, 'boss');
+            
+            // Itens especiais espalhados
+            spawnItem('laser_rifle', 0, -8);
+            spawnItem('plasma_rifle', -15, 10);
+            spawnItem('minigun', 20, 5);
+            spawnItem('helmet', -10, -15);
+            spawnItem('vest', 15, -20);
+            spawnItem('backpack', -5, 15);
+            spawnItem('boots', 25, -10);
+            spawnItem('glove', -20, -5);
             
             camera.position.set(0, 1.6, 0); 
-            updateMessage("Você entrou no Ermo. Pegue o Rifle à frente!");
+            updateMessage("Você entrou no Ermo. Explore para encontrar equipamentos!");
         }
 
         initVault();
@@ -311,13 +470,30 @@
 
         function updateUI() {
             document.getElementById('hp-count').innerText = playerHP;
+            document.getElementById('armor-count').innerText = playerArmor;
             document.getElementById('scrap-count').innerText = inventory.scrap;
             document.getElementById('water-count').innerText = inventory.water;
             document.getElementById('stimpak-count').innerText = inventory.stimpak;
             document.getElementById('inv-scrap').innerText = inventory.scrap;
             document.getElementById('inv-water').innerText = inventory.water;
             document.getElementById('inv-stimpak').innerText = inventory.stimpak;
-            if (hasLaserRifle) document.getElementById('inv-laser').innerText = "Rifle a Laser (Desbloqueado)";
+            document.getElementById('inv-ammo').innerText = ammo[weaponConfigs[currentWeapon].ammoType];
+            
+            // Atualizar equipamentos no inventário
+            document.getElementById('inv-helmet').innerText = inventory.helmet || 'Nenhum';
+            document.getElementById('inv-vest').innerText = inventory.vest || 'Nenhum';
+            document.getElementById('inv-backpack').innerText = inventory.backpack || 'Nenhuma';
+            document.getElementById('inv-boots').innerText = inventory.boots || 'Nenhuma';
+            document.getElementById('inv-glove').innerText = inventory.glove || 'Nenhuma';
+            
+            // Calcular defesa total
+            let defense = 0;
+            if(inventory.helmet) defense += 10;
+            if(inventory.vest) defense += 20;
+            if(inventory.boots) defense += 5;
+            if(inventory.glove) defense += 5;
+            playerArmor = defense;
+            document.getElementById('inv-defense').innerText = defense;
         }
 
         let moveF = false, moveB = false, moveL = false, moveR = false;
@@ -333,6 +509,9 @@
                 case 'KeyD': moveR = true; break;
                 case 'Digit1': equipWeapon(1); break;
                 case 'Digit2': equipWeapon(2); break;
+                case 'Digit3': equipWeapon(3); break;
+                case 'Digit4': equipWeapon(4); break;
+                case 'Digit5': equipWeapon(5); break;
                 case 'KeyH': 
                     if(inventory.stimpak > 0 && playerHP < 100) {
                         inventory.stimpak--; playerHP = Math.min(100, playerHP + 40);
@@ -369,10 +548,17 @@
                         obj.userData.opened = true;
                         obj.userData.lidMesh.position.z -= 0.3;
                         obj.userData.lidMesh.rotation.x = -Math.PI / 4;
-                        inventory.scrap += 3; inventory.water += 1;
-                        if(Math.random() > 0.4) inventory.stimpak += 1;
+                        inventory.scrap += Math.floor(Math.random() * 5) + 1;
+                        inventory.water += Math.floor(Math.random() * 3) + 1;
+                        if(Math.random() > 0.4) inventory.stimpak += Math.floor(Math.random() * 2) + 1;
+                        
+                        // Chance de encontrar equipamentos em baús
+                        const equipChance = Math.random();
+                        if(equipChance > 0.9 && !inventory.helmet) inventory.helmet = "Capacete de Combate";
+                        else if(equipChance > 0.8 && !inventory.vest) inventory.vest = "Colete Tático";
+                        
                         updateUI();
-                        updateMessage("Baú aberto com sucesso!");
+                        updateMessage("Baú aberto! Itens adicionados ao inventário.");
                     }
                 }
             }
@@ -391,7 +577,11 @@
                 direction.x = Number(moveR) - Number(moveL);
                 direction.normalize(); 
 
-                const speed = 40.0;
+                // Velocidade base aumentada com botas
+                let speed = 40.0;
+                if(inventory.boots) speed *= 1.1;
+                if(inventory.backpack) speed *= 1.05;
+                
                 if (moveF || moveB) velocity.z -= direction.z * speed * delta;
                 if (moveL || moveR) velocity.x -= direction.x * speed * delta;
 
@@ -401,40 +591,66 @@
                 if (moveF || moveB || moveL || moveR) weapons.position.y = -0.3 + Math.sin(time * 0.012) * 0.015;
                 else weapons.position.y = -0.3;
 
-                // Coleta
+                // Coleta de itens
                 for (let i = items.length - 1; i >= 0; i--) {
                     const item = items[i];
                     item.rotation.y += 0.02;
                     if (camera.position.distanceTo(item.position) < 1.8) {
                         environmentGroup.remove(item);
                         const type = item.userData.type;
-                        if (type === 'laser_rifle') {
-                            hasLaserRifle = true; equipWeapon(2);
-                            updateMessage("Rifle a Laser equipado!");
-                        } else {
+                        
+                        if (type === 'shotgun') { unlockWeapon(2); equipWeapon(2); updateMessage("Escopeta equipada!"); }
+                        else if (type === 'laser_rifle') { unlockWeapon(3); equipWeapon(3); updateMessage("Rifle Laser equipado!"); }
+                        else if (type === 'plasma_rifle') { unlockWeapon(4); equipWeapon(4); updateMessage("Rifle Plasma equipado!"); }
+                        else if (type === 'minigun') { unlockWeapon(5); equipWeapon(5); updateMessage("Metralhadora equipada!"); }
+                        else if (type === 'ammo_pack') {
+                            Object.keys(ammo).forEach(key => {
+                                if(key !== 'pistol') ammo[key] += 10;
+                            });
+                            updateMessage("Pacote de munição coletado! +10 munição");
+                        }
+                        else if (type === 'helmet') { inventory.helmet = "Capacete de Combate"; updateMessage("Capacete equipado! +10 defesa"); }
+                        else if (type === 'vest') { inventory.vest = "Colete Tático"; updateMessage("Colete equipado! +20 defesa"); }
+                        else if (type === 'backpack') { inventory.backpack = "Mochila Militar"; updateMessage("Mochila equipada! +5% velocidade"); }
+                        else if (type === 'boots') { inventory.boots = "Botas Táticas"; updateMessage("Botas equipadas! +10% velocidade"); }
+                        else if (type === 'glove') { inventory.glove = "Luva de Combate"; updateMessage("Luva equipada! +5 defesa"); }
+                        else {
                             inventory[type]++;
                             updateMessage(`Coletado: ${type.toUpperCase()}`);
                         }
+                        
                         items.splice(i, 1);
                         updateUI();
                     }
                 }
 
-                // Mobs
+                // Comportamento dos mobs melhorado
                 mobs.forEach(mob => {
                     const dist = camera.position.distanceTo(mob.position);
-                    if(dist < 22 && dist > 1.2) {
-                        const mobSpeed = 2.2 * delta;
+                    const mobData = mob.userData;
+                    
+                    if(dist < 25 && dist > 1.2) {
+                        const mobSpeed = mobData.speed;
                         const dir = new THREE.Vector3().subVectors(camera.position, mob.position).normalize();
                         mob.position.x += dir.x * mobSpeed;
                         mob.position.z += dir.z * mobSpeed;
                     }
-                    if(dist <= 1.4 && time - lastDamageTime > 1000) {
-                        playerHP -= 15;
+                    
+                    if(dist <= 1.5 && time - lastDamageTime > 1000) {
+                        let damage = 15;
+                        if(mobData.type === 'strong') damage = 25;
+                        if(mobData.type === 'boss') damage = 40;
+                        if(mobData.type === 'fast') damage = 10;
+                        
+                        // Redução de dano pela armadura
+                        const reducedDamage = Math.max(1, damage - (playerArmor * 0.5));
+                        playerHP -= reducedDamage;
+                        
                         lastDamageTime = time;
                         updateUI();
                         document.getElementById('damage-screen').style.opacity = '1';
                         setTimeout(() => document.getElementById('damage-screen').style.opacity = '0', 200);
+                        
                         if(playerHP <= 0) {
                             alert("Você morreu! Recarregue a página para reiniciar.");
                             document.location.reload();
