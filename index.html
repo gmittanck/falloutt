@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vault Explorer - V8 Enhanced</title>
+    <title>Vault Explorer - V9 Wasteland</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Courier New', Courier, monospace; color: #39ff14; user-select: none; }
         .scanlines { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.25) 50%), linear-gradient(90deg, rgba(255,0,0,0.06), rgba(0,255,0,0.02), rgba(0,0,255,0.06)); background-size: 100% 4px, 3px 100%; pointer-events: none; z-index: 11; opacity: 0.3; }
@@ -74,7 +74,7 @@
     </div>
 
     <div id="menu">
-        <h1>ROBCO INDUSTRIES - V8</h1>
+        <h1>ROBCO INDUSTRIES - V9</h1>
         <p>[ CLIQUE NA TELA PARA JOGAR ]</p>
         <p style="font-size: 0.9rem;">WASD: Mover | E: Interagir | Mouse: Atirar | H: Curar | 1-5: Trocar Armas | I: Inventário</p>
     </div>
@@ -128,7 +128,7 @@
             5: { name: 'Metralhadora', damage: 1.5, ammoType: 'heavy', fireRate: 100, recoil: 0.06 }
         };
 
-        // Pistola com sprite melhorado
+        // Pistola
         const pistol = new THREE.Group();
         const pBody = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.15, 0.35), new THREE.MeshStandardMaterial({ color: 0x555555, metalness: 0.8, roughness: 0.2 }));
         const pHandle = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.22, 0.12), new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.7 }));
@@ -140,7 +140,7 @@
         pistol.add(pBody, pHandle, pBarrel);
         weapons.add(pistol);
 
-        // Escopeta com sprite melhorado
+        // Escopeta
         const shotgun = new THREE.Group();
         const sBarrel1 = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.8, 8), new THREE.MeshStandardMaterial({ color: 0x444444, metalness: 0.9 }));
         sBarrel1.rotation.x = Math.PI / 2;
@@ -155,7 +155,7 @@
         shotgun.visible = false;
         weapons.add(shotgun);
 
-        // Rifle Laser com efeitos visuais
+        // Rifle Laser
         const laserRifle = new THREE.Group();
         const lBody = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.22, 0.7), new THREE.MeshStandardMaterial({ color: 0x222233, metalness: 0.5 }));
         const lBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.6, 8), new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 0.5 }));
@@ -205,11 +205,9 @@
         let lastFireTime = 0;
         let ammo = { pistol: Infinity, shotgun: 20, energy: 30, plasma: 10, heavy: 100 };
 
-        // Animação de tiro
         function shootAnimation() {
             const weaponConfig = weaponConfigs[currentWeapon];
             
-            // Recuo da arma
             weapons.position.z += weaponConfig.recoil;
             weapons.position.y -= weaponConfig.recoil * 0.5;
             
@@ -218,14 +216,12 @@
                 weapons.position.y += weaponConfig.recoil * 0.5;
             }, 100);
             
-            // Flash na boca do cano
             const muzzleFlash = document.getElementById('muzzle-flash');
             muzzleFlash.style.opacity = '1';
             setTimeout(() => {
                 muzzleFlash.style.opacity = '0';
             }, 50);
             
-            // Vibração da câmera
             camera.position.y += weaponConfig.recoil * 2;
             camera.position.x += (Math.random() - 0.5) * weaponConfig.recoil;
             setTimeout(() => {
@@ -266,11 +262,9 @@
                 const currentTime = performance.now();
                 const weaponConfig = weaponConfigs[currentWeapon];
                 
-                // Verificar fire rate
                 if (currentTime - lastFireTime < weaponConfig.fireRate) return;
                 lastFireTime = currentTime;
                 
-                // Animar tiro
                 shootAnimation();
                 
                 const ammoType = weaponConfig.ammoType;
@@ -288,7 +282,6 @@
                 const intersects = raycaster.intersectObjects(mobs, true);
                 
                 if (intersects.length > 0) {
-                    // Pegar o objeto raiz do mob
                     let hitObject = intersects[0].object;
                     while (hitObject.parent && hitObject.parent !== environmentGroup) {
                         hitObject = hitObject.parent;
@@ -298,7 +291,6 @@
                         const damage = weaponConfig.damage;
                         hitObject.userData.hp -= damage;
                         
-                        // Animação de dano no mob
                         hitObject.children.forEach(child => {
                             if (child.material && child.material.emissive) {
                                 child.material.emissive.setHex(0xff0000);
@@ -310,13 +302,11 @@
                             }
                         });
                         
-                        // Knockback
                         const knockDir = new THREE.Vector3().subVectors(hitObject.position, camera.position).normalize();
                         hitObject.position.x += knockDir.x * 0.5;
                         hitObject.position.z += knockDir.z * 0.5;
                         
                         if (hitObject.userData.hp <= 0) {
-                            // Animação de morte
                             hitObject.children.forEach(child => {
                                 if (child.material) {
                                     child.material.transparent = true;
@@ -331,7 +321,6 @@
                             
                             updateMessage(`${weaponConfig.name} destruiu o inimigo!`);
                             
-                            // Dropar itens
                             if(Math.random() > 0.7) spawnItem('scrap', hitObject.position.x, hitObject.position.z);
                             if(Math.random() > 0.85) spawnItem('ammo_pack', hitObject.position.x, hitObject.position.z);
                             if(Math.random() > 0.9) spawnItem('stimpak', hitObject.position.x, hitObject.position.z);
@@ -339,7 +328,6 @@
                     }
                 }
                 
-                // Efeito de tracer para armas de energia
                 if (currentWeapon === 3 || currentWeapon === 4) {
                     createTracerEffect();
                 }
@@ -383,7 +371,6 @@
         const vaultWallMat = new THREE.MeshStandardMaterial({ color: 0x5a665a, roughness: 0.8 });
         const vaultFloorMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.9 });
         const doorMat = new THREE.MeshStandardMaterial({ color: 0xffaa00, emissive: 0xffaa00, emissiveIntensity: 0.3 }); 
-        const wastelandFloorMat = new THREE.MeshStandardMaterial({ color: 0xa67d3d, roughness: 0.9 }); 
 
         let interactables = [];
         let items = [];
@@ -451,7 +438,6 @@
             
             switch(type) {
                 case 'normal':
-                    // Ghoul verde com glow
                     const nBody = new THREE.Mesh(
                         new THREE.CylinderGeometry(0.4, 0.5, 1.5, 6),
                         new THREE.MeshStandardMaterial({ color: 0x44ff44, emissive: 0x114411, emissiveIntensity: 0.3, roughness: 0.4 })
@@ -462,7 +448,6 @@
                     );
                     nHead.position.y = 1.0;
                     
-                    // Olhos brilhantes
                     const nEyeL = new THREE.Mesh(
                         new THREE.SphereGeometry(0.06, 4, 4),
                         new THREE.MeshBasicMaterial({ color: 0xff0000 })
@@ -480,7 +465,6 @@
                     break;
                     
                 case 'strong':
-                    // Super Mutante vermelho
                     const sBody = new THREE.Mesh(
                         new THREE.CylinderGeometry(0.6, 0.7, 2.0, 8),
                         new THREE.MeshStandardMaterial({ color: 0xff4444, emissive: 0x441111, emissiveIntensity: 0.2, roughness: 0.5 })
@@ -491,7 +475,6 @@
                     );
                     sHead.position.y = 1.3;
                     
-                    // Chifres
                     const hornL = new THREE.Mesh(
                         new THREE.ConeGeometry(0.08, 0.3, 4),
                         new THREE.MeshStandardMaterial({ color: 0x8B4513 })
@@ -511,7 +494,6 @@
                     break;
                     
                 case 'fast':
-                    // Criatura rápida amarela
                     const fBody = new THREE.Mesh(
                         new THREE.CylinderGeometry(0.3, 0.35, 1.2, 6),
                         new THREE.MeshStandardMaterial({ color: 0xffff00, emissive: 0x444400, emissiveIntensity: 0.4, roughness: 0.3 })
@@ -522,7 +504,6 @@
                     );
                     fHead.position.y = 0.8;
                     
-                    // Antenas
                     const antL = new THREE.Mesh(
                         new THREE.CylinderGeometry(0.01, 0.01, 0.2, 4),
                         new THREE.MeshBasicMaterial({ color: 0xffff00 })
@@ -540,7 +521,6 @@
                     break;
                     
                 case 'boss':
-                    // Boss roxo gigante
                     const bBody = new THREE.Mesh(
                         new THREE.CylinderGeometry(0.8, 0.9, 2.5, 8),
                         new THREE.MeshStandardMaterial({ color: 0xff00ff, emissive: 0x440044, emissiveIntensity: 0.3, roughness: 0.4 })
@@ -551,7 +531,6 @@
                     );
                     bHead.position.y = 1.6;
                     
-                    // Coroa/espinhos
                     for(let i = 0; i < 8; i++) {
                         const spike = new THREE.Mesh(
                             new THREE.ConeGeometry(0.08, 0.4, 4),
@@ -564,7 +543,6 @@
                         mobGroup.add(spike);
                     }
                     
-                    // Olhos múltiplos
                     for(let i = 0; i < 4; i++) {
                         const eye = new THREE.Mesh(
                             new THREE.SphereGeometry(0.05, 4, 4),
@@ -580,7 +558,6 @@
                     break;
             }
             
-            // Salvar cores originais para animações
             mobGroup.children.forEach(child => {
                 if (child.material && child.material.emissive) {
                     child.userData = child.userData || {};
@@ -599,13 +576,281 @@
             mobs.push(mobGroup);
         }
 
+        // =========================================
+        // NOVAS ESTRUTURAS DO MUNDO EXTERIOR
+        // =========================================
+        function spawnAbandonedHouse(x, z) {
+            const group = new THREE.Group();
+            
+            const wallMat = new THREE.MeshStandardMaterial({ color: 0x8B7355, roughness: 0.9 });
+            const damagedWallMat = new THREE.MeshStandardMaterial({ color: 0x6B5345, roughness: 0.9 });
+            
+            const frontWall = new THREE.Mesh(new THREE.BoxGeometry(6, 3, 0.3), wallMat);
+            frontWall.position.set(x, 1.5, z - 3);
+            
+            const backWall = new THREE.Mesh(new THREE.BoxGeometry(6, 3, 0.3), wallMat);
+            backWall.position.set(x, 1.5, z + 3);
+            
+            const leftWall = new THREE.Mesh(new THREE.BoxGeometry(0.3, 3, 6), wallMat);
+            leftWall.position.set(x - 3, 1.5, z);
+            
+            const rightWall = new THREE.Mesh(new THREE.BoxGeometry(0.3, 3, 6), damagedWallMat);
+            rightWall.position.set(x + 3, 1.5, z);
+            rightWall.scale.y = 0.6;
+            
+            const roofMat = new THREE.MeshStandardMaterial({ color: 0x654321, roughness: 0.8 });
+            const roofLeft = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.2, 6.5), roofMat);
+            roofLeft.position.set(x - 1.5, 3.2, z);
+            roofLeft.rotation.z = 0.3;
+            
+            const roofRight = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.2, 6.5), roofMat);
+            roofRight.position.set(x + 1.5, 3.2, z);
+            roofRight.rotation.z = -0.3;
+            
+            const doorMat2 = new THREE.MeshStandardMaterial({ color: 0x4A3728, roughness: 0.7 });
+            const door = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2.5, 0.1), doorMat2);
+            door.position.set(x, 1.3, z - 2.8);
+            door.rotation.y = Math.random() * 0.5;
+            
+            const windowMat = new THREE.MeshStandardMaterial({ color: 0xADD8E6, roughness: 0.3, transparent: true, opacity: 0.5 });
+            const window1 = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 0.05), windowMat);
+            window1.position.set(x - 2, 1.8, z - 2.9);
+            
+            group.add(frontWall, backWall, leftWall, rightWall, roofLeft, roofRight, door, window1);
+            
+            if(Math.random() > 0.5) {
+                const table = new THREE.Mesh(
+                    new THREE.BoxGeometry(2, 0.1, 1.5), 
+                    new THREE.MeshStandardMaterial({ color: 0x8B4513 })
+                );
+                table.position.set(x, 0.8, z);
+                group.add(table);
+            }
+            
+            environmentGroup.add(group);
+            
+            if(Math.random() > 0.4) spawnItem('scrap', x, z);
+            if(Math.random() > 0.7) spawnItem('ammo_pack', x + 1, z);
+            if(Math.random() > 0.85) spawnItem('stimpak', x - 1, z + 1);
+        }
+
+        function spawnRuinedStore(x, z) {
+            const group = new THREE.Group();
+            
+            const wallMat = new THREE.MeshStandardMaterial({ color: 0x999999, roughness: 0.7 });
+            const signMat = new THREE.MeshStandardMaterial({ color: 0xFF4444, emissive: 0x440000, emissiveIntensity: 0.3 });
+            
+            const wall1 = new THREE.Mesh(new THREE.BoxGeometry(8, 3, 0.3), wallMat);
+            wall1.position.set(x, 1.5, z - 4);
+            
+            const wall2 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 3, 8), wallMat);
+            wall2.position.set(x - 4, 1.5, z);
+            
+            const wall3 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 3, 8), wallMat);
+            wall3.position.set(x + 4, 1.5, z);
+            
+            const vitrine = new THREE.Mesh(
+                new THREE.BoxGeometry(3, 2, 0.1),
+                new THREE.MeshStandardMaterial({ color: 0xADD8E6, roughness: 0.2, transparent: true, opacity: 0.4 })
+            );
+            vitrine.position.set(x, 1.5, z - 3.9);
+            
+            const sign = new THREE.Mesh(new THREE.BoxGeometry(4, 0.8, 0.2), signMat);
+            sign.position.set(x, 3.5, z - 3.8);
+            
+            for(let i = 0; i < 3; i++) {
+                const shelf = new THREE.Mesh(
+                    new THREE.BoxGeometry(2, 0.1, 0.5),
+                    new THREE.MeshStandardMaterial({ color: 0x8B4513 })
+                );
+                shelf.position.set(x - 2 + i * 2, 0.7, z - 1);
+                group.add(shelf);
+            }
+            
+            const counter = new THREE.Mesh(
+                new THREE.BoxGeometry(3, 1.2, 1),
+                new THREE.MeshStandardMaterial({ color: 0x666666 })
+            );
+            counter.position.set(x, 0.6, z + 2);
+            
+            group.add(wall1, wall2, wall3, vitrine, sign, counter);
+            environmentGroup.add(group);
+            
+            spawnItem('scrap', x, z);
+            spawnItem('water', x + 1, z + 1);
+            if(Math.random() > 0.6) spawnItem('ammo_pack', x - 1, z);
+            if(Math.random() > 0.8) spawnItem('stimpak', x, z - 2);
+        }
+
+        function spawnGasStation(x, z) {
+            const group = new THREE.Group();
+            
+            const buildingMat = new THREE.MeshStandardMaterial({ color: 0xCCCCCC, roughness: 0.8 });
+            const building = new THREE.Mesh(new THREE.BoxGeometry(5, 3, 4), buildingMat);
+            building.position.set(x, 1.5, z);
+            
+            const roof = new THREE.Mesh(
+                new THREE.BoxGeometry(8, 0.3, 6),
+                new THREE.MeshStandardMaterial({ color: 0xFF4444, roughness: 0.7 })
+            );
+            roof.position.set(x, 3.5, z);
+            
+            for(let i = 0; i < 2; i++) {
+                const pump = new THREE.Group();
+                const pumpBody = new THREE.Mesh(
+                    new THREE.BoxGeometry(1, 1.5, 0.8),
+                    new THREE.MeshStandardMaterial({ color: 0xDDDDDD })
+                );
+                pumpBody.position.set(x - 2 + i * 4, 0.75, z + 3);
+                
+                const pumpTop = new THREE.Mesh(
+                    new THREE.BoxGeometry(1.2, 0.2, 1),
+                    new THREE.MeshStandardMaterial({ color: 0xFF0000, emissive: 0x440000, emissiveIntensity: 0.2 })
+                );
+                pumpTop.position.set(0, 0.8, 0);
+                
+                pump.add(pumpBody, pumpTop);
+                group.add(pump);
+            }
+            
+            const priceSign = new THREE.Mesh(
+                new THREE.BoxGeometry(3, 1.5, 0.1),
+                new THREE.MeshStandardMaterial({ color: 0xFFFF00, emissive: 0x444400, emissiveIntensity: 0.4 })
+            );
+            priceSign.position.set(x, 4, z + 4);
+            
+            group.add(building, roof, priceSign);
+            environmentGroup.add(group);
+            
+            if(Math.random() > 0.5) spawnItem('water', x + 2, z + 2);
+            if(Math.random() > 0.7) spawnItem('scrap', x - 2, z - 1);
+        }
+
+        function spawnDestroyedCar(x, z) {
+            const car = new THREE.Group();
+            
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.6, metalness: 0.4 });
+            const body = new THREE.Mesh(new THREE.BoxGeometry(2, 0.6, 4), bodyMat);
+            body.position.y = 0.4;
+            
+            const cabinMat = new THREE.MeshStandardMaterial({ color: 0x666666, roughness: 0.5, metalness: 0.3 });
+            const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.5, 1.5), cabinMat);
+            cabin.position.set(0, 0.9, -0.5);
+            
+            const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 });
+            for(let i = 0; i < 4; i++) {
+                const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.2, 8), wheelMat);
+                wheel.rotation.x = Math.PI / 2;
+                wheel.position.set(
+                    i % 2 === 0 ? -1.2 : 1.2,
+                    0.3,
+                    i < 2 ? -1.2 : 1.2
+                );
+                car.add(wheel);
+            }
+            
+            if(Math.random() > 0.7) {
+                const fire = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.3, 4, 4),
+                    new THREE.MeshBasicMaterial({ color: 0xFF6600, transparent: true, opacity: 0.6 })
+                );
+                fire.position.set(0, 1.2, 0);
+                car.add(fire);
+            }
+            
+            car.add(body, cabin);
+            car.position.set(x, 0, z);
+            car.rotation.y = Math.random() * Math.PI * 2;
+            environmentGroup.add(car);
+            
+            if(Math.random() > 0.6) spawnItem('scrap', x, z);
+        }
+
+        function spawnWatchtower(x, z) {
+            const group = new THREE.Group();
+            
+            const baseMat = new THREE.MeshStandardMaterial({ color: 0x666666, roughness: 0.7 });
+            const base = new THREE.Mesh(new THREE.BoxGeometry(2, 0.5, 2), baseMat);
+            base.position.y = 0.25;
+            
+            const pillarMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.6 });
+            for(let i = 0; i < 4; i++) {
+                const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.2, 6, 6), pillarMat);
+                pillar.position.set(
+                    i % 2 === 0 ? -0.8 : 0.8,
+                    3,
+                    i < 2 ? -0.8 : 0.8
+                );
+                group.add(pillar);
+            }
+            
+            const platform = new THREE.Mesh(new THREE.BoxGeometry(3, 0.3, 3), baseMat);
+            platform.position.y = 6;
+            
+            const roof = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.2, 3.5), baseMat);
+            roof.position.y = 6.8;
+            
+            const railMat = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.5 });
+            for(let i = 0; i < 4; i++) {
+                const rail = new THREE.Mesh(new THREE.BoxGeometry(3, 0.1, 0.1), railMat);
+                rail.position.set(0, 6.3, i < 2 ? -1.5 : 1.5);
+                group.add(rail);
+            }
+            
+            group.add(base, platform, roof);
+            group.position.set(x, 0, z);
+            environmentGroup.add(group);
+            
+            if(Math.random() > 0.5) spawnItem('ammo_pack', x, z + 2);
+            if(Math.random() > 0.8) spawnItem('helmet', x + 1, z);
+        }
+
+        function spawnCampfire(x, z) {
+            const group = new THREE.Group();
+            
+            const stoneMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.9 });
+            for(let i = 0; i < 6; i++) {
+                const stone = new THREE.Mesh(new THREE.SphereGeometry(0.2, 4, 4), stoneMat);
+                const angle = (i / 6) * Math.PI * 2;
+                stone.position.set(Math.cos(angle) * 0.8, 0.1, Math.sin(angle) * 0.8);
+                group.add(stone);
+            }
+            
+            const fire = new THREE.Mesh(
+                new THREE.ConeGeometry(0.4, 1, 4),
+                new THREE.MeshBasicMaterial({ color: 0xFF6600, transparent: true, opacity: 0.8 })
+            );
+            fire.position.y = 0.5;
+            
+            const fireLight = new THREE.Mesh(
+                new THREE.SphereGeometry(0.2, 4, 4),
+                new THREE.MeshBasicMaterial({ color: 0xFF4400, transparent: true, opacity: 0.6 })
+            );
+            fireLight.position.y = 0.8;
+            
+            const logMat = new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.9 });
+            for(let i = 0; i < 2; i++) {
+                const log = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 2, 4), logMat);
+                log.position.set(0, 0.05, -0.5 + i * 1);
+                log.rotation.x = Math.PI / 2;
+                group.add(log);
+            }
+            
+            group.add(fire, fireLight);
+            group.position.set(x, 0, z);
+            environmentGroup.add(group);
+            
+            if(Math.random() > 0.4) spawnItem('water', x + 1, z + 1);
+            if(Math.random() > 0.6) spawnItem('scrap', x - 1, z);
+            if(Math.random() > 0.8) spawnItem('stimpak', x, z + 1);
+        }
+
         function spawnRuinedHouse(x, z) {
             const houseMat = new THREE.MeshStandardMaterial({ color: 0x665544, roughness: 0.8 });
             const w1 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 3, 6), houseMat); w1.position.set(x - 3, 1.5, z);
             const w2 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 3, 6), houseMat); w2.position.set(x + 3, 1.5, z);
             const w3 = new THREE.Mesh(new THREE.BoxGeometry(6, 3, 0.5), houseMat); w3.position.set(x, 1.5, z - 3);
             
-            // Telhado danificado
             const roofMat = new THREE.MeshStandardMaterial({ color: 0x8B0000, roughness: 0.7 });
             const roof = new THREE.Mesh(new THREE.ConeGeometry(4, 1.5, 4), roofMat);
             roof.position.set(x, 3.5, z);
@@ -620,6 +865,11 @@
         function initVault() {
             clearEnvironment();
             currentLevel = 'vault';
+            
+            scene.background = new THREE.Color(0x1a261a);
+            scene.fog = new THREE.Fog(0x1a261a, 5, 30);
+            ambientLight.intensity = 2.5;
+            directionalLight.intensity = 0;
             
             const floor = new THREE.Mesh(new THREE.PlaneGeometry(150, 150), vaultFloorMat);
             floor.rotation.x = -Math.PI / 2;
@@ -668,42 +918,113 @@
             clearEnvironment();
             currentLevel = 'wasteland';
             
-            scene.background = new THREE.Color(0xd27d2d); 
-            scene.fog = new THREE.FogExp2(0xd27d2d, 0.015); 
-            ambientLight.intensity = 1.2; 
-            directionalLight.intensity = 2.0;
+            // CÉU MAIS CLARO E ATMOSFERA DIURNA
+            scene.background = new THREE.Color(0x87CEEB); // Azul celeste
+            scene.fog = new THREE.FogExp2(0xB0C4DE, 0.008); // Névoa azulada suave
+            ambientLight.intensity = 2.0; // Luz ambiente mais forte
+            directionalLight.intensity = 3.0; // Sol mais forte
+            
+            // Adicionar sol visível
+            const sunLight = new THREE.DirectionalLight(0xFFF5E6, 2.0);
+            sunLight.position.set(50, 100, 50);
+            scene.add(sunLight);
 
-            const floor = new THREE.Mesh(new THREE.PlaneGeometry(300, 300), wastelandFloorMat);
+            // Chão do deserto mais claro
+            const floor = new THREE.Mesh(
+                new THREE.PlaneGeometry(300, 300), 
+                new THREE.MeshStandardMaterial({ color: 0xC4A46C, roughness: 0.8 }) // Areia mais clara
+            );
             floor.rotation.x = -Math.PI / 2;
             environmentGroup.add(floor);
+            
+            // Adicionar textura de grama seca em algumas áreas
+            for(let i = 0; i < 20; i++) {
+                const grassPatch = new THREE.Mesh(
+                    new THREE.CircleGeometry(2 + Math.random() * 3, 8),
+                    new THREE.MeshStandardMaterial({ color: 0x8B9A46, roughness: 0.9, transparent: true, opacity: 0.3 })
+                );
+                grassPatch.rotation.x = -Math.PI / 2;
+                grassPatch.position.set(
+                    (Math.random() - 0.5) * 200,
+                    0.01,
+                    (Math.random() - 0.5) * 200
+                );
+                environmentGroup.add(grassPatch);
+            }
 
-            for(let i = 0; i < 15; i++) {
-                const rx = (Math.random() - 0.5) * 100;
-                const rz = (Math.random() - 0.5) * 100;
-                if(Math.abs(rx) > 8 && Math.abs(rz) > 8) {
-                    spawnRuinedHouse(rx, rz);
+            // GERAR ESTRUTURAS VARIADAS
+            for(let i = 0; i < 25; i++) {
+                const rx = (Math.random() - 0.5) * 120;
+                const rz = (Math.random() - 0.5) * 120;
+                
+                if(Math.abs(rx) > 10 && Math.abs(rz) > 10) {
+                    const structureType = Math.random();
                     
+                    if(structureType < 0.3) {
+                        spawnAbandonedHouse(rx, rz);
+                    } else if(structureType < 0.5) {
+                        spawnRuinedStore(rx, rz);
+                    } else if(structureType < 0.65) {
+                        spawnGasStation(rx, rz);
+                    } else if(structureType < 0.75) {
+                        spawnWatchtower(rx, rz);
+                    } else if(structureType < 0.85) {
+                        spawnRuinedHouse(rx, rz);
+                    } else {
+                        spawnCampfire(rx, rz);
+                    }
+                    
+                    // Carros destruídos perto das estruturas
+                    if(Math.random() > 0.5) {
+                        spawnDestroyedCar(rx + (Math.random() - 0.5) * 10, rz + (Math.random() - 0.5) * 10);
+                    }
+                    
+                    // Spawn de mobs
                     const mobType = Math.random();
-                    if(mobType < 0.5) spawnMob(rx + 3, rz + 3, 'normal');
-                    else if(mobType < 0.75) spawnMob(rx - 3, rz - 2, 'strong');
-                    else if(mobType < 0.95) spawnMob(rx + 2, rz - 3, 'fast');
+                    if(mobType < 0.4) spawnMob(rx + 5, rz + 5, 'normal');
+                    else if(mobType < 0.65) spawnMob(rx - 5, rz - 3, 'strong');
+                    else if(mobType < 0.85) spawnMob(rx + 3, rz - 5, 'fast');
+                    else spawnMob(rx - 3, rz + 3, 'boss');
                     
-                    if(Math.random() > 0.6) spawnChest(rx, rz);
+                    // Baús em locais estratégicos
+                    if(Math.random() > 0.5) spawnChest(rx, rz);
                 }
             }
             
-            spawnMob(0, -30, 'boss');
+            // ESTRUTURAS FIXAS IMPORTANTES
+            spawnAbandonedHouse(0, -15);
+            spawnRuinedStore(-20, 10);
+            spawnGasStation(25, -20);
+            spawnWatchtower(-25, -25);
+            spawnDestroyedCar(10, 10);
+            spawnDestroyedCar(-15, 5);
+            spawnCampfire(15, -10);
+            spawnCampfire(-10, 20);
+            
+            // BOSS garantido
+            spawnMob(0, -40, 'boss');
+            
+            // ITENS ESPECIAIS
             spawnItem('laser_rifle', 0, -8);
-            spawnItem('plasma_rifle', -15, 10);
-            spawnItem('minigun', 20, 5);
-            spawnItem('helmet', -10, -15);
-            spawnItem('vest', 15, -20);
-            spawnItem('backpack', -5, 15);
-            spawnItem('boots', 25, -10);
-            spawnItem('glove', -20, -5);
+            spawnItem('plasma_rifle', -18, 12);
+            spawnItem('minigun', 22, 8);
+            spawnItem('shotgun', -8, -12);
+            spawnItem('helmet', -12, -18);
+            spawnItem('vest', 18, -22);
+            spawnItem('backpack', -8, 18);
+            spawnItem('boots', 28, -12);
+            spawnItem('glove', -22, -8);
+            
+            // Munição extra espalhada
+            for(let i = 0; i < 10; i++) {
+                spawnItem('ammo_pack', 
+                    (Math.random() - 0.5) * 80, 
+                    (Math.random() - 0.5) * 80
+                );
+            }
             
             camera.position.set(0, 1.6, 0); 
-            updateMessage("Você entrou no Ermo. Cuidado com os perigos!");
+            updateMessage("Você entrou no Ermo. Explore as ruínas com cuidado!");
         }
 
         initVault();
@@ -843,7 +1164,6 @@
                 controls.moveRight(-velocity.x * delta);
                 controls.moveForward(-velocity.z * delta);
 
-                // Animação de idle da arma
                 if (moveF || moveB || moveL || moveR) {
                     weapons.position.y = -0.3 + Math.sin(time * 0.012) * 0.02;
                     weapons.rotation.z = Math.sin(time * 0.008) * 0.02;
@@ -852,13 +1172,11 @@
                     weapons.rotation.z = Math.sin(time * 0.002) * 0.005;
                 }
 
-                // Animação da metralhadora girando
                 if (currentWeapon === 5 && minigun.visible) {
                     const barrels = minigun.children[1];
                     if (barrels) barrels.rotation.z += 0.3;
                 }
 
-                // Coleta de itens
                 for (let i = items.length - 1; i >= 0; i--) {
                     const item = items[i];
                     item.rotation.y += 0.02;
@@ -891,7 +1209,6 @@
                     }
                 }
 
-                // Comportamento dos mobs
                 mobs.forEach(mob => {
                     const dist = camera.position.distanceTo(mob.position);
                     const mobData = mob.userData;
@@ -901,12 +1218,9 @@
                         const dir = new THREE.Vector3().subVectors(camera.position, mob.position).normalize();
                         mob.position.x += dir.x * mobSpeed;
                         mob.position.z += dir.z * mobSpeed;
-                        
-                        // Mob olha para o jogador
                         mob.lookAt(camera.position);
                     }
                     
-                    // Animação de flutuação
                     mob.position.y = Math.sin(time * 0.005 + mob.position.x) * 0.05;
                     
                     if(dist <= 1.5 && time - lastDamageTime > 1000) {
