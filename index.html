@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vault Explorer - Terminal System</title>
+    <title>Vault Explorer - Terminal System V2</title>
     <style>
         /* =========================================
            Estética Retro-Futurista (Pip-Boy Style)
@@ -46,7 +46,7 @@
             border-bottom: 2px solid #39ff14;
             padding-bottom: 10px;
             font-weight: bold;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
         }
 
         #message-box {
@@ -55,11 +55,57 @@
             left: 50%;
             transform: translateX(-50%);
             border: 1px solid #39ff14;
-            background: rgba(0, 20, 0, 0.8);
+            background: rgba(0, 20, 0, 0.85);
             padding: 10px 20px;
             text-align: center;
             font-size: 1rem;
-            min-width: 300px;
+            min-width: 350px;
+        }
+
+        /* Painel do Inventário (Estilo Pip-Boy) */
+        #inventory-overlay {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 450px;
+            height: 380px;
+            background: rgba(0, 20, 0, 0.95);
+            border: 2px solid #39ff14;
+            box-shadow: 0 0 15px rgba(57, 255, 20, 0.4);
+            display: none;
+            flex-direction: column;
+            padding: 20px;
+            z-index: 30;
+            pointer-events: auto;
+        }
+
+        #inventory-overlay h2 {
+            margin-top: 0;
+            border-bottom: 2px solid #39ff14;
+            padding-bottom: 5px;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+
+        .inv-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .inv-item {
+            border: 1px dashed #39ff14;
+            padding: 10px;
+            background: rgba(0, 40, 0, 0.5);
+            font-size: 0.9rem;
+        }
+
+        .inv-footer {
+            margin-top: auto;
+            text-align: center;
+            font-size: 0.8rem;
+            opacity: 0.8;
         }
 
         /* Tela de Início / Pausa */
@@ -77,7 +123,8 @@
         }
 
         #menu h1 { font-size: 3rem; margin-bottom: 10px; }
-        #menu p { font-size: 1.2rem; }
+        #menu p { font-size: 1.1rem; }
+        
         .crosshair {
             position: absolute;
             top: 50%; left: 50%;
@@ -96,9 +143,28 @@
     <div id="ui">
         <div id="hud">
             <div>HP: 100/100 | RADS: <span id="rads-count">0</span></div>
+            <div>EQUIPADO: <span id="weapon-status">Pistola 10mm</span></div>
             <div>SUCATA: <span id="scrap-count">0</span> | ÁGUA: <span id="water-count">0</span></div>
         </div>
-        <div id="message-box">Sistema online. Explorando o Refúgio...</div>
+        <div id="message-box">Sistema RobCo inicializado. [I] Inventário | [F] Lanterna | [E] Interagir</div>
+    </div>
+
+    <div id="inventory-overlay">
+        <h2>PIP-BOY 3000 - INVENTÁRIO</h2>
+        <div class="inv-grid">
+            <div class="inv-item">
+                <strong>[EQUIPAMENTO]</strong><br>
+                • Pistola 10mm (Equipado)<br>
+                • Lanterna de Pulso (<span id="flashlight-status">LIGADA</span>)
+            </div>
+            <div class="inv-item">
+                <strong>[RECURSOS]</strong><br>
+                • Sucata: <span id="inv-scrap">0</span> un.<br>
+                • Água Purificada: <span id="inv-water">0</span> un.<br>
+                • Baús Abertos: <span id="inv-chests">0</span>
+            </div>
+        </div>
+        <div class="inv-footer">Pressione [I] para Fechar</div>
     </div>
 
     <div id="menu">
@@ -107,7 +173,7 @@
         <br>
         <p>[ CLIQUE NA TELA PARA ENTRAR ]</p>
         <br>
-        <p style="font-size: 0.9rem;">Controles: W A S D para mover | Mouse para olhar</p>
+        <p style="font-size: 0.9rem;">Controles: WASD para Mover | Mouse para Olhar | F: Lanterna | E: Abrir Baú | I: Inventário</p>
     </div>
 
     <script type="importmap">
@@ -124,36 +190,80 @@
         import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 
         // =========================================
-        // Configuração Básica do Three.js
+        // Configuração Básica da Câmera e Cenário
         // =========================================
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x000500); // Fundo bem escuro
-        scene.fog = new THREE.Fog(0x000500, 0, 30); // Efeito de neblina escura
+        scene.background = new THREE.Color(0x000300); 
+        scene.fog = new THREE.Fog(0x000300, 2, 25); // Neblina para atmosfera pós-apocalíptica
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.y = 1.6; // Altura dos olhos do jogador
+        camera.position.y = 1.6; // Altura dos olhos
 
-        const renderer = new THREE.WebGLRenderer({ antialias: false }); // Antialias false para visual mais retrô
+        const renderer = new THREE.WebGLRenderer({ antialias: false });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
         // =========================================
-        // Iluminação (Clima tenso de Wasteland)
+        // Iluminação & Lanterna (Flashlight)
         // =========================================
-        const ambientLight = new THREE.AmbientLight(0x223322); 
+        const ambientLight = new THREE.AmbientLight(0x112211, 0.8); 
         scene.add(ambientLight);
 
-        const pointLight = new THREE.PointLight(0x39ff14, 1, 15);
-        scene.add(pointLight); // Luz amarrada ao jogador (simulando a luz do Pip-Boy)
+        // SpotLight simulando a Lanterna fixada na câmera
+        const flashlight = new THREE.SpotLight(0xccffcc, 5, 20, Math.PI / 6, 0.5, 1);
+        flashlight.position.set(0, 0, 0);
+        
+        // Objeto alvo da lanterna (foca para frente da câmera)
+        const flashlightTarget = new THREE.Object3D();
+        flashlightTarget.position.set(0, 0, -1);
+        camera.add(flashlightTarget);
+        flashlight.target = flashlightTarget;
+        
+        camera.add(flashlight);
+        scene.add(camera);
+
+        let flashlightOn = true;
+
+        // =========================================
+        // Criação da Arma (Pistola 10mm 3D)
+        // =========================================
+        const weaponGroup = new THREE.Group();
+
+        // Corpo da Pistola
+        const bodyGeo = new THREE.BoxGeometry(0.12, 0.15, 0.45);
+        const gunMat = new THREE.MeshLambertMaterial({ color: 0x333333 });
+        const gunBody = new THREE.Mesh(bodyGeo, gunMat);
+
+        // Cabo/Empunhadura
+        const handleGeo = new THREE.BoxGeometry(0.1, 0.25, 0.12);
+        const handleMat = new THREE.MeshLambertMaterial({ color: 0x553311 });
+        const gunHandle = new THREE.Mesh(handleGeo, handleMat);
+        gunHandle.position.set(0, -0.15, 0.1);
+        gunHandle.rotation.x = -0.2;
+
+        // Cano da Arma
+        const barrelGeo = new THREE.CylinderGeometry(0.03, 0.03, 0.3, 8);
+        const barrelMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
+        const gunBarrel = new THREE.Mesh(barrelGeo, barrelMat);
+        gunBarrel.rotation.x = Math.PI / 2;
+        gunBarrel.position.set(0, 0.04, -0.2);
+
+        weaponGroup.add(gunBody, gunHandle, gunBarrel);
+
+        // Posiciona a arma no canto inferior direito da tela
+        weaponGroup.position.set(0.28, -0.25, -0.5);
+        camera.add(weaponGroup);
 
         // =========================================
         // Controles de Câmera e Menu
         // =========================================
         const controls = new PointerLockControls(camera, document.body);
         const menu = document.getElementById('menu');
+        const inventoryOverlay = document.getElementById('inventory-overlay');
+        let isInventoryOpen = false;
 
         menu.addEventListener('click', () => {
-            controls.lock();
+            if (!isInventoryOpen) controls.lock();
         });
 
         controls.addEventListener('lock', () => {
@@ -161,22 +271,22 @@
         });
 
         controls.addEventListener('unlock', () => {
-            menu.style.display = 'flex';
+            if (!isInventoryOpen) {
+                menu.style.display = 'flex';
+            }
         });
 
         // =========================================
-        // Criação do Cenário (Labirinto do Refúgio)
+        // Construção do Mapa do Refúgio
         // =========================================
-        const wallMaterial = new THREE.MeshLambertMaterial({ color: 0x334433 }); // Paredes metálicas enferrujadas/escuras
-        const floorMaterial = new THREE.MeshLambertMaterial({ color: 0x111111 });
+        const wallMaterial = new THREE.MeshLambertMaterial({ color: 0x223322 });
+        const floorMaterial = new THREE.MeshLambertMaterial({ color: 0x080808 });
 
-        // Chão
-        const floorGeometry = new THREE.PlaneGeometry(100, 100);
-        const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+        const floorGeo = new THREE.PlaneGeometry(100, 100);
+        const floor = new THREE.Mesh(floorGeo, floorMaterial);
         floor.rotation.x = -Math.PI / 2;
         scene.add(floor);
 
-        // Mapa simples (1 = Parede, 0 = Caminho livre)
         const map = [
             [1,1,1,1,1,1,1,1,1,1],
             [1,0,0,0,1,0,0,0,0,1],
@@ -191,8 +301,6 @@
         ];
 
         const tileSize = 4;
-        const walls = [];
-
         for(let z = 0; z < map.length; z++) {
             for(let x = 0; x < map[z].length; x++) {
                 if(map[z][x] === 1) {
@@ -200,47 +308,76 @@
                     const wall = new THREE.Mesh(wallGeo, wallMaterial);
                     wall.position.set((x - 5) * tileSize, (tileSize * 1.5) / 2, (z - 5) * tileSize);
                     scene.add(wall);
-                    walls.push(wall);
                 }
             }
         }
 
         // =========================================
-        // Itens Coletáveis
+        // Itens Coletáveis e Baús
         // =========================================
         const items = [];
-        
+        const chests = [];
+
         function createItem(type, x, z) {
             let color, geo;
             if(type === 'scrap') {
-                color = 0x888888; // Cinza para sucata
-                geo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+                color = 0xaaaaaa;
+                geo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
             } else if (type === 'water') {
-                color = 0x00aaff; // Azul para água purificada
-                geo = new THREE.CylinderGeometry(0.3, 0.3, 0.8, 8);
+                color = 0x00aaff;
+                geo = new THREE.CylinderGeometry(0.2, 0.2, 0.6, 8);
             }
 
             const mat = new THREE.MeshLambertMaterial({ color: color });
             const item = new THREE.Mesh(geo, mat);
-            item.position.set((x - 5) * tileSize, 0.5, (z - 5) * tileSize);
-            
-            // Metadados do item
+            item.position.set((x - 5) * tileSize, 0.4, (z - 5) * tileSize);
             item.userData = { type: type };
             
             scene.add(item);
             items.push(item);
         }
 
-        // Espalhando itens pelo mapa
+        function createChest(x, z) {
+            const chestGroup = new THREE.Group();
+
+            // Base do Baú
+            const baseGeo = new THREE.BoxGeometry(1.2, 0.7, 0.8);
+            const chestMat = new THREE.MeshLambertMaterial({ color: 0x664422 }); // Madeira/Metal enferrujado
+            const base = new THREE.Mesh(baseGeo, chestMat);
+            base.position.y = 0.35;
+
+            // Tampa do Baú
+            const lidGeo = new THREE.BoxGeometry(1.24, 0.2, 0.84);
+            const lidMat = new THREE.MeshLambertMaterial({ color: 0x885522 });
+            const lid = new THREE.Mesh(lidGeo, lidMat);
+            lid.position.set(0, 0.75, 0);
+
+            chestGroup.add(base, lid);
+            chestGroup.position.set((x - 5) * tileSize, 0, (z - 5) * tileSize);
+            
+            chestGroup.userData = { 
+                opened: false,
+                lidMesh: lid
+            };
+
+            scene.add(chestGroup);
+            chests.push(chestGroup);
+        }
+
+        // Espalhando itens e baús no labirinto
         createItem('scrap', 1, 1);
         createItem('scrap', 3, 5);
-        createItem('scrap', 8, 2);
         createItem('water', 1, 7);
-        createItem('water', 6, 8);
+        
+        createChest(8, 1); // Baú 1
+        createChest(6, 8); // Baú 2
+        createChest(1, 3); // Baú 3
 
-        // Variáveis de Jogo
+        // Variáveis de Estado do Inventário
         let scrapCount = 0;
         let waterCount = 0;
+        let chestsOpened = 0;
+
         const messageBox = document.getElementById('message-box');
 
         function updateMessage(text) {
@@ -250,14 +387,19 @@
             }, 3000);
         }
 
-        // =========================================
-        // Mecânica de Movimentação e Física Básica
-        // =========================================
-        let moveForward = false;
-        let moveBackward = false;
-        let moveLeft = false;
-        let moveRight = false;
+        function updateInventoryUI() {
+            document.getElementById('scrap-count').innerText = scrapCount;
+            document.getElementById('water-count').innerText = waterCount;
+            document.getElementById('inv-scrap').innerText = scrapCount;
+            document.getElementById('inv-water').innerText = waterCount;
+            document.getElementById('inv-chests').innerText = chestsOpened;
+            document.getElementById('flashlight-status').innerText = flashlightOn ? "LIGADA" : "DESLIGADA";
+        }
 
+        // =========================================
+        // Gerenciamento de Teclas e Ações
+        // =========================================
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
         const velocity = new THREE.Vector3();
         const direction = new THREE.Vector3();
         let prevTime = performance.now();
@@ -268,6 +410,26 @@
                 case 'KeyA': moveLeft = true; break;
                 case 'KeyS': moveBackward = true; break;
                 case 'KeyD': moveRight = true; break;
+                
+                // Toggle Lanterna (F)
+                case 'KeyF':
+                    flashlightOn = !flashlightOn;
+                    flashlight.visible = flashlightOn;
+                    updateInventoryUI();
+                    updateMessage(flashlightOn ? "Lanterna Ligada." : "Lanterna Desligada.");
+                    break;
+
+                // Abrir/Fechar Inventário (I ou Tab)
+                case 'KeyI':
+                case 'Tab':
+                    event.preventDefault();
+                    toggleInventory();
+                    break;
+
+                // Interagir com Baús (E)
+                case 'KeyE':
+                    interactWithChest();
+                    break;
             }
         });
 
@@ -280,8 +442,43 @@
             }
         });
 
+        function toggleInventory() {
+            isInventoryOpen = !isInventoryOpen;
+            if (isInventoryOpen) {
+                inventoryOverlay.style.display = 'flex';
+                controls.unlock();
+            } else {
+                inventoryOverlay.style.display = 'none';
+                controls.lock();
+            }
+        }
+
+        function interactWithChest() {
+            chests.forEach(chest => {
+                const dist = camera.position.distanceTo(chest.position);
+                if (dist < 2.5) {
+                    if (!chest.userData.opened) {
+                        chest.userData.opened = true;
+                        
+                        // Animação de abrir a tampa
+                        chest.userData.lidMesh.position.z -= 0.3;
+                        chest.userData.lidMesh.rotation.x = -Math.PI / 4;
+
+                        // Recompensa do Baú
+                        scrapCount += 5;
+                        waterCount += 2;
+                        chestsOpened++;
+                        updateInventoryUI();
+                        updateMessage("Baú Aberto! Encontrados: +5 Sucata, +2 Água!");
+                    } else {
+                        updateMessage("Este baú já está vazio.");
+                    }
+                }
+            });
+        }
+
         // =========================================
-        // Loop Principal do Jogo (Renderização)
+        // Loop Principal do Jogo
         // =========================================
         function animate() {
             requestAnimationFrame(animate);
@@ -291,7 +488,7 @@
             if (controls.isLocked === true) {
                 const delta = (time - prevTime) / 1000;
 
-                // Atrito e Desaceleração
+                // Atrito da movimentação
                 velocity.x -= velocity.x * 10.0 * delta;
                 velocity.z -= velocity.z * 10.0 * delta;
 
@@ -299,37 +496,36 @@
                 direction.x = Number(moveRight) - Number(moveLeft);
                 direction.normalize(); 
 
-                const speed = 40.0;
+                const speed = 35.0;
                 if (moveForward || moveBackward) velocity.z -= direction.z * speed * delta;
                 if (moveLeft || moveRight) velocity.x -= direction.x * speed * delta;
 
-                // Move os controles
                 controls.moveRight(-velocity.x * delta);
                 controls.moveForward(-velocity.z * delta);
-                
-                // Luz acompanha o jogador
-                pointLight.position.copy(camera.position);
 
-                // Animação de flutuação dos itens e Coleta
+                // Animação leve de balanço da arma ao andar (Weapon Bobbing)
+                if (moveForward || moveBackward || moveLeft || moveRight) {
+                    weaponGroup.position.y = -0.25 + Math.sin(time * 0.01) * 0.015;
+                    weaponGroup.position.x = 0.28 + Math.cos(time * 0.005) * 0.01;
+                }
+
+                // Coleta de itens do chão
                 for (let i = items.length - 1; i >= 0; i--) {
                     const item = items[i];
                     item.rotation.y += 0.02;
-                    item.position.y = 0.5 + Math.sin(time * 0.003 + i) * 0.2; // Efeito de boiar
 
-                    // Checagem simples de distância para coleta
                     if (camera.position.distanceTo(item.position) < 1.5) {
                         scene.remove(item);
                         items.splice(i, 1);
                         
                         if(item.userData.type === 'scrap') {
                             scrapCount++;
-                            document.getElementById('scrap-count').innerText = scrapCount;
                             updateMessage("Você encontrou Sucata!");
                         } else if (item.userData.type === 'water') {
                             waterCount++;
-                            document.getElementById('water-count').innerText = waterCount;
                             updateMessage("Você encontrou Água Purificada!");
                         }
+                        updateInventoryUI();
                     }
                 }
             }
@@ -340,7 +536,7 @@
 
         animate();
 
-        // Redimensionar tela
+        // Ajuste em caso de redimensionamento de janela
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
