@@ -28,6 +28,7 @@
         canvas {
             display: block;
             background: #1a1a2e;
+            cursor: crosshair;
         }
         
         #ui {
@@ -77,6 +78,7 @@
             display: none;
             z-index: 20;
             border-radius: 5px;
+            pointer-events: auto;
         }
         
         #inventory-overlay h2 {
@@ -112,6 +114,7 @@
             z-index: 30;
             color: #39ff14;
             text-shadow: 0 0 10px #39ff14;
+            cursor: pointer;
         }
         
         #menu h1 {
@@ -122,6 +125,15 @@
         #menu p {
             font-size: 1rem;
             margin: 5px 0;
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
     </style>
 </head>
@@ -162,8 +174,8 @@
         
         <div id="menu">
             <h1>⚡ VAULT EXPLORER 2D ⚡</h1>
-            <p>[ CLIQUE PARA JOGAR ]</p>
-            <p style="font-size: 0.9rem;">WASD: Mover | Mouse: Mirar/Atirar | E: Interagir</p>
+            <p class="pulse" style="font-size: 1.5rem; margin-top: 20px;">[ CLIQUE PARA JOGAR ]</p>
+            <p style="font-size: 0.9rem; margin-top: 30px;">WASD: Mover | Mouse: Mirar/Atirar | E: Interagir</p>
             <p style="font-size: 0.9rem;">H: Curar | 1-5: Armas | I: Inventário</p>
         </div>
     </div>
@@ -172,6 +184,7 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const container = document.getElementById('game-container');
+        const menu = document.getElementById('menu');
         
         canvas.width = 800;
         canvas.height = 600;
@@ -393,6 +406,14 @@
         function setMessage(msg) {
             message = msg;
             messageTimer = 200;
+        }
+        
+        function startGame() {
+            gameStarted = true;
+            menu.style.display = 'none';
+            initVault();
+            updateUI();
+            setMessage("🏚️ Vault 13 - Encontre a porta amarela!");
         }
         
         function shoot() {
@@ -720,20 +741,18 @@
             
             // Desenhar itens
             for (let item of items) {
+                const floatY = Math.sin(Date.now() * 0.003 + item.x) * 3;
+                
                 ctx.fillStyle = item.color;
                 ctx.beginPath();
-                ctx.arc(item.x, item.y, item.radius, 0, Math.PI * 2);
+                ctx.arc(item.x, item.y + floatY, item.radius, 0, Math.PI * 2);
                 ctx.fill();
                 
                 // Brilho
                 ctx.fillStyle = 'rgba(255,255,255,0.3)';
                 ctx.beginPath();
-                ctx.arc(item.x, item.y, item.radius * 0.5, 0, Math.PI * 2);
+                ctx.arc(item.x, item.y + floatY, item.radius * 0.5, 0, Math.PI * 2);
                 ctx.fill();
-                
-                // Rotação (efeito de flutuação)
-                const float = Math.sin(Date.now() * 0.003 + item.x) * 3;
-                item.displayY = (item.displayY || item.y) + (float - (item.displayY - item.y)) * 0.1;
             }
             
             // Desenhar inimigos
@@ -868,7 +887,7 @@
                 case '4': equipWeapon(4); break;
                 case '5': equipWeapon(5); break;
                 case 'h':
-                    if (inventory.stimpak > 0 && player.hp < 100) {
+                    if (gameStarted && inventory.stimpak > 0 && player.hp < 100) {
                         inventory.stimpak--;
                         player.hp = Math.min(100, player.hp + 40);
                         updateUI();
@@ -876,13 +895,15 @@
                     }
                     break;
                 case 'i':
-                case 'tab':
+                case 'Tab':
                     e.preventDefault();
-                    inventoryOpen = !inventoryOpen;
-                    document.getElementById('inventory-overlay').style.display = inventoryOpen ? 'block' : 'none';
+                    if (gameStarted) {
+                        inventoryOpen = !inventoryOpen;
+                        document.getElementById('inventory-overlay').style.display = inventoryOpen ? 'block' : 'none';
+                    }
                     break;
                 case 'e':
-                    interact();
+                    if (gameStarted) interact();
                     break;
             }
         });
@@ -901,10 +922,7 @@
             if (e.button === 0) {
                 mouseDown = true;
                 if (!gameStarted) {
-                    gameStarted = true;
-                    document.getElementById('menu').style.display = 'none';
-                    initVault();
-                    updateUI();
+                    startGame();
                 }
             }
         });
@@ -912,6 +930,13 @@
         canvas.addEventListener('mouseup', (e) => {
             if (e.button === 0) {
                 mouseDown = false;
+            }
+        });
+        
+        // Também permitir clicar no menu para iniciar
+        menu.addEventListener('click', () => {
+            if (!gameStarted) {
+                startGame();
             }
         });
         
@@ -929,6 +954,8 @@
         // Iniciar
         updateUI();
         gameLoop();
+        
+        console.log('Jogo carregado! Clique na tela ou no menu para começar.');
     </script>
 </body>
 </html>
