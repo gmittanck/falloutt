@@ -3,29 +3,161 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vault Explorer - Primeira Pessoa</title>
+    <title>Vault Explorer - Otimizado</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #87CEEB; font-family: 'Courier New', Courier, monospace; color: #39ff14; user-select: none; }
-        .scanlines { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.15) 50%), linear-gradient(90deg, rgba(255,0,0,0.04), rgba(0,255,0,0.01), rgba(0,0,255,0.04)); background-size: 100% 4px, 3px 100%; pointer-events: none; z-index: 11; opacity: 0.2; }
-        #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; padding: 20px; box-sizing: border-box; z-index: 10; text-shadow: 0 0 5px #39ff14; }
-        #hud { display: flex; justify-content: space-between; border-bottom: 2px solid #39ff14; padding-bottom: 10px; font-weight: bold; font-size: 1.1rem; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 5px; }
-        #message-box { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); border: 1px solid #39ff14; background: rgba(0, 20, 0, 0.85); padding: 10px 20px; text-align: center; font-size: 1rem; min-width: 350px; }
-        #inventory-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 600px; height: 520px; background: rgba(0, 20, 0, 0.95); border: 2px solid #39ff14; box-shadow: 0 0 15px rgba(57, 255, 20, 0.4); display: none; flex-direction: column; padding: 20px; z-index: 30; pointer-events: auto; }
-        #inventory-overlay h2 { margin-top: 0; border-bottom: 2px solid #39ff14; padding-bottom: 5px; text-align: center; }
-        .inv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
-        .inv-item { border: 1px dashed #39ff14; padding: 10px; background: rgba(0, 40, 0, 0.5); font-size: 0.85rem; }
-        .inv-footer { margin-top: auto; text-align: center; font-size: 0.8rem; opacity: 0.8; }
-        #menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 10, 0, 0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 20; cursor: pointer; text-shadow: 0 0 10px #39ff14; }
-        #menu h1 { font-size: 3rem; margin-bottom: 10px; }
-        #menu p { font-size: 1.1rem; }
-        .crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #ffffff; font-size: 24px; z-index: 9; opacity: 0.8; }
-        .damage-overlay { position: absolute; top:0; left:0; width: 100%; height: 100%; background: rgba(255, 0, 0, 0.3); z-index: 15; pointer-events: none; opacity: 0; transition: opacity 0.2s; }
-        .muzzle-flash { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100px; height: 100px; background: radial-gradient(circle, rgba(255,255,0,0.8), transparent); border-radius: 50%; z-index: 14; pointer-events: none; opacity: 0; transition: opacity 0.05s; }
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background-color: #000; 
+            font-family: 'Courier New', Courier, monospace; 
+            color: #39ff14; 
+            user-select: none; 
+        }
+        #ui { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            pointer-events: none; 
+            padding: 20px; 
+            box-sizing: border-box; 
+            z-index: 10; 
+        }
+        #hud { 
+            display: flex; 
+            justify-content: space-between; 
+            border-bottom: 2px solid #39ff14; 
+            padding-bottom: 10px; 
+            font-weight: bold; 
+            font-size: 1.1rem; 
+            background: rgba(0,0,0,0.7); 
+            padding: 15px; 
+            border-radius: 5px;
+            backdrop-filter: blur(5px);
+        }
+        #message-box { 
+            position: absolute; 
+            bottom: 30px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            border: 1px solid #39ff14; 
+            background: rgba(0, 20, 0, 0.9); 
+            padding: 15px 25px; 
+            text-align: center; 
+            font-size: 1rem; 
+            min-width: 350px;
+            backdrop-filter: blur(5px);
+            border-radius: 5px;
+        }
+        #inventory-overlay { 
+            position: absolute; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+            width: 600px; 
+            height: 520px; 
+            background: rgba(0, 20, 0, 0.95); 
+            border: 2px solid #39ff14; 
+            box-shadow: 0 0 30px rgba(57, 255, 20, 0.4); 
+            display: none; 
+            flex-direction: column; 
+            padding: 20px; 
+            z-index: 30; 
+            pointer-events: auto; 
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+        #inventory-overlay h2 { 
+            margin-top: 0; 
+            border-bottom: 2px solid #39ff14; 
+            padding-bottom: 10px; 
+            text-align: center; 
+        }
+        .inv-grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 15px; 
+            margin-top: 15px; 
+        }
+        .inv-item { 
+            border: 1px dashed #39ff14; 
+            padding: 12px; 
+            background: rgba(0, 40, 0, 0.5); 
+            font-size: 0.85rem;
+            border-radius: 5px;
+        }
+        .inv-footer { 
+            margin-top: auto; 
+            text-align: center; 
+            font-size: 0.8rem; 
+            opacity: 0.8; 
+        }
+        #menu { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background-color: rgba(0, 10, 0, 0.95); 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            z-index: 20; 
+            cursor: pointer; 
+            backdrop-filter: blur(10px);
+        }
+        #menu h1 { 
+            font-size: 3.5rem; 
+            margin-bottom: 20px; 
+            text-shadow: 0 0 20px #39ff14;
+        }
+        #menu p { 
+            font-size: 1.2rem; 
+            margin: 10px 0;
+        }
+        .crosshair { 
+            position: absolute; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+            color: #ffffff; 
+            font-size: 28px; 
+            z-index: 9; 
+            opacity: 0.8;
+            text-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+        .damage-overlay { 
+            position: absolute; 
+            top:0; 
+            left:0; 
+            width: 100%; 
+            height: 100%; 
+            background: radial-gradient(circle, transparent 50%, rgba(255, 0, 0, 0.3) 100%);
+            z-index: 15; 
+            pointer-events: none; 
+            opacity: 0; 
+            transition: opacity 0.1s; 
+        }
+        .muzzle-flash { 
+            position: absolute; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+            width: 120px; 
+            height: 120px; 
+            background: radial-gradient(circle, rgba(255,255,0,0.9), rgba(255,100,0,0.4), transparent);
+            border-radius: 50%; 
+            z-index: 14; 
+            pointer-events: none; 
+            opacity: 0; 
+            transition: opacity 0.03s; 
+        }
     </style>
 </head>
 <body>
 
-    <div class="scanlines"></div>
     <div class="crosshair">⌖</div>
     <div class="damage-overlay" id="damage-screen"></div>
     <div class="muzzle-flash" id="muzzle-flash"></div>
@@ -40,43 +172,44 @@
     </div>
 
     <div id="inventory-overlay">
-        <h2>PIP-BOY 3000</h2>
+        <h2>📟 PIP-BOY 3000</h2>
         <div class="inv-grid">
             <div class="inv-item">
-                <strong>[ARMAS]</strong><br>
+                <strong>⚔️ ARMAS</strong><br><br>
                 [1] Pistola 10mm<br>
-                [2] <span id="inv-shotgun">Escopeta (Bloqueado)</span><br>
-                [3] <span id="inv-laser">Rifle Laser (Bloqueado)</span><br>
-                [4] <span id="inv-plasma">Rifle Plasma (Bloqueado)</span><br>
-                [5] <span id="inv-minigun">Metralhadora (Bloqueado)</span>
+                [2] <span id="inv-shotgun">Escopeta (🔒)</span><br>
+                [3] <span id="inv-laser">Rifle Laser (🔒)</span><br>
+                [4] <span id="inv-plasma">Rifle Plasma (🔒)</span><br>
+                [5] <span id="inv-minigun">Metralhadora (🔒)</span>
             </div>
             <div class="inv-item">
-                <strong>[INVENTÁRIO]</strong><br>
-                Sucata: <span id="inv-scrap">0</span><br>
-                Água: <span id="inv-water">0</span><br>
-                Stimpaks [H]: <span id="inv-stimpak">0</span><br>
-                Munição: <span id="inv-ammo">∞</span>
+                <strong>🎒 INVENTÁRIO</strong><br><br>
+                🔧 Sucata: <span id="inv-scrap">0</span><br>
+                💧 Água: <span id="inv-water">0</span><br>
+                💉 Stimpaks: <span id="inv-stimpak">0</span><br>
+                🔋 Munição: <span id="inv-ammo">∞</span>
             </div>
             <div class="inv-item">
-                <strong>[ARMADURA]</strong><br>
-                Capacete: <span id="inv-helmet">Nenhum</span><br>
-                Colete: <span id="inv-vest">Nenhum</span><br>
-                Defesa Total: <span id="inv-defense">0</span>
+                <strong>🛡️ ARMADURA</strong><br><br>
+                ⛑️ Capacete: <span id="inv-helmet">Nenhum</span><br>
+                🦺 Colete: <span id="inv-vest">Nenhum</span><br>
+                💪 Defesa: <span id="inv-defense">0</span>
             </div>
             <div class="inv-item">
-                <strong>[ACESSÓRIOS]</strong><br>
-                Mochila: <span id="inv-backpack">Nenhuma</span><br>
-                Botas: <span id="inv-boots">Nenhuma</span><br>
-                Luva: <span id="inv-glove">Nenhuma</span>
+                <strong>🎯 ACESSÓRIOS</strong><br><br>
+                🎒 Mochila: <span id="inv-backpack">Nenhuma</span><br>
+                👢 Botas: <span id="inv-boots">Nenhuma</span><br>
+                🧤 Luva: <span id="inv-glove">Nenhuma</span>
             </div>
         </div>
-        <div class="inv-footer">Pressione [I] para Fechar</div>
+        <div class="inv-footer">Pressione [I] ou [TAB] para Fechar</div>
     </div>
 
     <div id="menu">
-        <h1>ROBCO INDUSTRIES - V1</h1>
-        <p>[ CLIQUE NA TELA PARA JOGAR ]</p>
-        <p style="font-size: 0.9rem;">WASD: Mover | E: Interagir | Mouse: Atirar | H: Curar | 1-5: Trocar Armas | I: Inventário</p>
+        <h1>⚡ VAULT EXPLORER ⚡</h1>
+        <p>[ CLIQUE PARA JOGAR ]</p>
+        <p style="font-size: 1rem; opacity: 0.8;">WASD: Mover | E: Interagir | Mouse: Atirar</p>
+        <p style="font-size: 1rem; opacity: 0.8;">H: Curar | 1-5: Armas | I/TAB: Inventário</p>
     </div>
 
     <script type="importmap">
@@ -93,132 +226,191 @@
         import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 
         // =========================================
-        // CONFIGURAÇÃO INICIAL
+        // CONFIGURAÇÃO OTIMIZADA
         // =========================================
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x87CEEB);
-        scene.fog = new THREE.Fog(0xB0C4DE, 30, 200);
+        scene.background = new THREE.Color(0x1a1a2e);
+        scene.fog = new THREE.Fog(0x1a1a2e, 20, 150);
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(0, 1.6, 0); // Altura dos olhos
+        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 200);
+        camera.position.set(0, 1.6, 0);
         
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        const renderer = new THREE.WebGLRenderer({ 
+            antialias: true,
+            powerPreference: "high-performance"
+        });
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Limitar para performance
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
         document.body.appendChild(renderer.domElement);
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, 3.0);
+        // Iluminação melhorada
+        const ambientLight = new THREE.AmbientLight(0x404060, 1.5);
         scene.add(ambientLight);
         
-        const sunLight = new THREE.DirectionalLight(0xFFF5E6, 4.0);
-        sunLight.position.set(100, 150, 50);
+        const sunLight = new THREE.DirectionalLight(0xFFF5E6, 5.0);
+        sunLight.position.set(50, 80, 30);
         sunLight.castShadow = true;
-        sunLight.shadow.mapSize.width = 2048;
-        sunLight.shadow.mapSize.height = 2048;
+        sunLight.shadow.mapSize.width = 1024;
+        sunLight.shadow.mapSize.height = 1024;
         sunLight.shadow.camera.near = 0.5;
-        sunLight.shadow.camera.far = 500;
-        sunLight.shadow.camera.left = -100;
-        sunLight.shadow.camera.right = 100;
-        sunLight.shadow.camera.top = 100;
-        sunLight.shadow.camera.bottom = -100;
+        sunLight.shadow.camera.far = 200;
+        sunLight.shadow.camera.left = -50;
+        sunLight.shadow.camera.right = 50;
+        sunLight.shadow.camera.top = 50;
+        sunLight.shadow.camera.bottom = -50;
+        sunLight.shadow.bias = -0.0001;
         scene.add(sunLight);
         
-        const fillLight = new THREE.DirectionalLight(0xB0C4DE, 1.5);
-        fillLight.position.set(-50, 30, -30);
+        const fillLight = new THREE.DirectionalLight(0xB0C4DE, 2.0);
+        fillLight.position.set(-30, 20, -20);
         scene.add(fillLight);
 
-        // =========================================
-        // LIMITES DO MAPA
-        // =========================================
-        const MAP_SIZE = 140;
-        const MAP_BOUNDARY = MAP_SIZE / 2;
-
-        function clampPosition(position) {
-            position.x = Math.max(-MAP_BOUNDARY, Math.min(MAP_BOUNDARY, position.x));
-            position.z = Math.max(-MAP_BOUNDARY, Math.min(MAP_BOUNDARY, position.z));
-            position.y = Math.max(0.1, position.y);
-            return position;
-        }
+        const hemisphereLight = new THREE.HemisphereLight(0x87CEEB, 0x362907, 1.0);
+        scene.add(hemisphereLight);
 
         // =========================================
-        // Sistema de Armas
+        // SISTEMA DE ARMAS OTIMIZADO
         // =========================================
         const weapons = new THREE.Group();
         camera.add(weapons);
-        weapons.position.set(0.4, -0.3, -0.6);
+        weapons.position.set(0.35, -0.25, -0.5);
 
         const weaponConfigs = {
-            1: { name: 'Pistola 10mm', damage: 1, ammoType: 'pistol', fireRate: 200, recoil: 0.05 },
-            2: { name: 'Escopeta', damage: 3, ammoType: 'shotgun', fireRate: 800, recoil: 0.15 },
-            3: { name: 'Rifle Laser', damage: 2, ammoType: 'energy', fireRate: 300, recoil: 0.08 },
-            4: { name: 'Rifle Plasma', damage: 4, ammoType: 'plasma', fireRate: 600, recoil: 0.12 },
-            5: { name: 'Metralhadora', damage: 1.5, ammoType: 'heavy', fireRate: 100, recoil: 0.06 }
+            1: { name: 'Pistola 10mm', damage: 2, ammoType: 'pistol', fireRate: 150 },
+            2: { name: 'Escopeta', damage: 5, ammoType: 'shotgun', fireRate: 600 },
+            3: { name: 'Rifle Laser', damage: 4, ammoType: 'energy', fireRate: 250 },
+            4: { name: 'Rifle Plasma', damage: 8, ammoType: 'plasma', fireRate: 500 },
+            5: { name: 'Metralhadora', damage: 3, ammoType: 'heavy', fireRate: 80 }
         };
 
-        const pistol = new THREE.Group();
-        const pBody = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.15, 0.35), new THREE.MeshStandardMaterial({ color: 0x555555, metalness: 0.8, roughness: 0.2 }));
-        const pHandle = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.22, 0.12), new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.7 }));
-        pHandle.position.set(0, -0.15, 0.1);
-        pHandle.rotation.x = -0.2;
-        const pBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.03, 0.2, 8), new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.9 }));
-        pBarrel.rotation.x = Math.PI / 2;
-        pBarrel.position.set(0, 0.05, -0.25);
-        pistol.add(pBody, pHandle, pBarrel);
-        weapons.add(pistol);
-
-        const shotgun = new THREE.Group();
-        const sBarrel1 = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.8, 8), new THREE.MeshStandardMaterial({ color: 0x444444, metalness: 0.9 }));
-        sBarrel1.rotation.x = Math.PI / 2;
-        sBarrel1.position.set(-0.03, 0.05, -0.5);
-        const sBarrel2 = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.8, 8), new THREE.MeshStandardMaterial({ color: 0x444444, metalness: 0.9 }));
-        sBarrel2.rotation.x = Math.PI / 2;
-        sBarrel2.position.set(0.03, 0.05, -0.5);
-        const sBody = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.2, 0.6), new THREE.MeshStandardMaterial({ color: 0x654321, roughness: 0.6 }));
-        const sStock = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.25, 0.3), new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.7 }));
-        sStock.position.set(0, -0.1, 0.35);
-        shotgun.add(sBarrel1, sBarrel2, sBody, sStock);
-        shotgun.visible = false;
-        weapons.add(shotgun);
-
-        const laserRifle = new THREE.Group();
-        const lBody = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.22, 0.7), new THREE.MeshStandardMaterial({ color: 0x222233, metalness: 0.5 }));
-        const lBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.6, 8), new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 0.5 }));
-        lBarrel.rotation.x = Math.PI / 2;
-        lBarrel.position.set(0, 0.05, -0.45);
-        const lStock = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.25, 0.35), new THREE.MeshStandardMaterial({ color: 0xaa8800 })); 
-        lStock.position.set(0, -0.1, 0.35);
-        const lScope = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.04, 0.1, 8), new THREE.MeshStandardMaterial({ color: 0x00ff00, emissive: 0x00ff00, emissiveIntensity: 0.3 }));
-        lScope.position.set(0, 0.15, -0.1);
-        laserRifle.add(lBody, lBarrel, lStock, lScope);
-        laserRifle.visible = false;
-        weapons.add(laserRifle);
-
-        const plasmaRifle = new THREE.Group();
-        const plBody = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.25, 0.8), new THREE.MeshStandardMaterial({ color: 0x00ff44, emissive: 0x00ff44, emissiveIntensity: 0.3 }));
-        const plCoil = new THREE.Mesh(new THREE.TorusGeometry(0.1, 0.03, 8, 16), new THREE.MeshStandardMaterial({ color: 0x00ffff, emissive: 0x00ffff, emissiveIntensity: 0.8 }));
-        plCoil.position.set(0, 0.1, -0.2);
-        const plBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.3, 8), new THREE.MeshStandardMaterial({ color: 0x00ff00, emissive: 0x00ff00, emissiveIntensity: 0.5 }));
-        plBarrel.rotation.x = Math.PI / 2;
-        plBarrel.position.set(0, 0.05, -0.5);
-        plasmaRifle.add(plBody, plCoil, plBarrel);
-        plasmaRifle.visible = false;
-        weapons.add(plasmaRifle);
-
-        const minigun = new THREE.Group();
-        const barrels = new THREE.Group();
-        for(let i = 0; i < 6; i++) {
-            const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.6, 6), new THREE.MeshStandardMaterial({ color: 0x666666, metalness: 0.9 }));
-            const angle = (i / 6) * Math.PI * 2;
-            barrel.position.y = Math.sin(angle) * 0.08;
-            barrel.position.x = Math.cos(angle) * 0.08;
-            barrels.add(barrel);
+        // Armas com geometria otimizada
+        function createPistol() {
+            const group = new THREE.Group();
+            const body = new THREE.Mesh(
+                new THREE.BoxGeometry(0.08, 0.12, 0.3),
+                new THREE.MeshStandardMaterial({ color: 0x444444, metalness: 0.9, roughness: 0.2 })
+            );
+            const handle = new THREE.Mesh(
+                new THREE.BoxGeometry(0.06, 0.18, 0.1),
+                new THREE.MeshStandardMaterial({ color: 0x2a1a0a, roughness: 0.6 })
+            );
+            handle.position.set(0, -0.12, 0.08);
+            handle.rotation.x = -0.3;
+            const barrel = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.015, 0.02, 0.2, 6),
+                new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.95, roughness: 0.1 })
+            );
+            barrel.rotation.x = Math.PI / 2;
+            barrel.position.set(0, 0.04, -0.22);
+            group.add(body, handle, barrel);
+            return group;
         }
-        const mBody = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.5), new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.8 }));
-        barrels.position.z = -0.4;
-        minigun.add(mBody, barrels);
+
+        function createShotgun() {
+            const group = new THREE.Group();
+            const barrels = new THREE.Group();
+            for(let i = 0; i < 2; i++) {
+                const barrel = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.03, 0.03, 0.7, 6),
+                    new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.9, roughness: 0.1 })
+                );
+                barrel.rotation.x = Math.PI / 2;
+                barrel.position.set(i === 0 ? -0.025 : 0.025, 0.04, -0.45);
+                barrels.add(barrel);
+            }
+            const body = new THREE.Mesh(
+                new THREE.BoxGeometry(0.12, 0.18, 0.5),
+                new THREE.MeshStandardMaterial({ color: 0x4a3520, roughness: 0.5 })
+            );
+            const stock = new THREE.Mesh(
+                new THREE.BoxGeometry(0.08, 0.2, 0.25),
+                new THREE.MeshStandardMaterial({ color: 0x6b4423, roughness: 0.6 })
+            );
+            stock.position.set(0, -0.08, 0.3);
+            group.add(barrels, body, stock);
+            return group;
+        }
+
+        function createLaserRifle() {
+            const group = new THREE.Group();
+            const body = new THREE.Mesh(
+                new THREE.BoxGeometry(0.12, 0.18, 0.6),
+                new THREE.MeshStandardMaterial({ color: 0x1a1a2e, metalness: 0.6, roughness: 0.3 })
+            );
+            const barrel = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.03, 0.04, 0.5, 6),
+                new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 0.8, roughness: 0.2 })
+            );
+            barrel.rotation.x = Math.PI / 2;
+            barrel.position.set(0, 0.04, -0.4);
+            const scope = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.025, 0.03, 0.08, 6),
+                new THREE.MeshStandardMaterial({ color: 0x00ff00, emissive: 0x00ff00, emissiveIntensity: 0.5 })
+            );
+            scope.position.set(0, 0.12, -0.1);
+            group.add(body, barrel, scope);
+            return group;
+        }
+
+        function createPlasmaRifle() {
+            const group = new THREE.Group();
+            const body = new THREE.Mesh(
+                new THREE.BoxGeometry(0.14, 0.2, 0.7),
+                new THREE.MeshStandardMaterial({ color: 0x003322, emissive: 0x00ff44, emissiveIntensity: 0.4, roughness: 0.3 })
+            );
+            const coil = new THREE.Mesh(
+                new THREE.TorusGeometry(0.08, 0.02, 6, 12),
+                new THREE.MeshStandardMaterial({ color: 0x00ffff, emissive: 0x00ffff, emissiveIntensity: 1.0, roughness: 0.1 })
+            );
+            coil.position.set(0, 0.08, -0.15);
+            const barrel = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.04, 0.05, 0.25, 6),
+                new THREE.MeshStandardMaterial({ color: 0x00ff00, emissive: 0x00ff00, emissiveIntensity: 0.6, roughness: 0.2 })
+            );
+            barrel.rotation.x = Math.PI / 2;
+            barrel.position.set(0, 0.04, -0.45);
+            group.add(body, coil, barrel);
+            return group;
+        }
+
+        function createMinigun() {
+            const group = new THREE.Group();
+            const barrels = new THREE.Group();
+            for(let i = 0; i < 4; i++) {
+                const barrel = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.015, 0.015, 0.5, 4),
+                    new THREE.MeshStandardMaterial({ color: 0x555555, metalness: 0.9, roughness: 0.2 })
+                );
+                const angle = (i / 4) * Math.PI * 2;
+                barrel.position.set(Math.cos(angle) * 0.06, Math.sin(angle) * 0.06, 0);
+                barrels.add(barrel);
+            }
+            const body = new THREE.Mesh(
+                new THREE.BoxGeometry(0.2, 0.25, 0.4),
+                new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.8, roughness: 0.3 })
+            );
+            barrels.position.z = -0.3;
+            group.add(body, barrels);
+            return group;
+        }
+
+        const pistol = createPistol();
+        const shotgun = createShotgun();
+        const laserRifle = createLaserRifle();
+        const plasmaRifle = createPlasmaRifle();
+        const minigun = createMinigun();
+        
+        shotgun.visible = false;
+        laserRifle.visible = false;
+        plasmaRifle.visible = false;
         minigun.visible = false;
-        weapons.add(minigun);
+        
+        weapons.add(pistol, shotgun, laserRifle, plasmaRifle, minigun);
 
         let unlockedWeapons = { 1: true, 2: false, 3: false, 4: false, 5: false };
         let currentWeapon = 1;
@@ -226,19 +418,19 @@
         let playerArmor = 0;
         let lastDamageTime = 0;
         let lastFireTime = 0;
-        let ammo = { pistol: Infinity, shotgun: 20, energy: 30, plasma: 10, heavy: 100 };
+        let ammo = { pistol: Infinity, shotgun: 15, energy: 25, plasma: 8, heavy: 80 };
 
         function shootAnimation() {
-            const weaponConfig = weaponConfigs[currentWeapon];
-            weapons.position.z += weaponConfig.recoil;
-            weapons.position.y -= weaponConfig.recoil * 0.5;
+            weapons.position.z += 0.03;
+            weapons.position.y -= 0.02;
             setTimeout(() => {
-                weapons.position.z -= weaponConfig.recoil;
-                weapons.position.y += weaponConfig.recoil * 0.5;
-            }, 100);
+                weapons.position.z -= 0.03;
+                weapons.position.y += 0.02;
+            }, 80);
+            
             const muzzleFlash = document.getElementById('muzzle-flash');
-            muzzleFlash.style.opacity = '1';
-            setTimeout(() => { muzzleFlash.style.opacity = '0'; }, 50);
+            muzzleFlash.style.opacity = '0.8';
+            setTimeout(() => { muzzleFlash.style.opacity = '0'; }, 40);
         }
 
         function equipWeapon(id) {
@@ -256,120 +448,39 @@
 
         function unlockWeapon(id) {
             unlockedWeapons[id] = true;
-            const invElements = { 2: 'inv-shotgun', 3: 'inv-laser', 4: 'inv-plasma', 5: 'inv-minigun' };
-            if (invElements[id]) {
-                document.getElementById(invElements[id]).innerText = `${weaponConfigs[id].name} (Desbloqueado)`;
+            const elements = { 2: 'inv-shotgun', 3: 'inv-laser', 4: 'inv-plasma', 5: 'inv-minigun' };
+            if (elements[id]) {
+                document.getElementById(elements[id]).innerText = `${weaponConfigs[id].name} ✅`;
+                document.getElementById(elements[id]).style.color = '#39ff14';
             }
         }
 
-        const raycaster = new THREE.Raycaster();
-        
-        document.addEventListener('mousedown', () => {
-            if (controls.isLocked) {
-                const currentTime = performance.now();
-                const weaponConfig = weaponConfigs[currentWeapon];
-                if (currentTime - lastFireTime < weaponConfig.fireRate) return;
-                lastFireTime = currentTime;
-                shootAnimation();
-                
-                const ammoType = weaponConfig.ammoType;
-                if (ammo[ammoType] <= 0 && ammoType !== 'pistol') {
-                    updateMessage("Sem munição! Use pistola (1) ou encontre munição.");
-                    return;
-                }
-                if (ammoType !== 'pistol') {
-                    ammo[ammoType]--;
-                    document.getElementById('ammo-count').innerText = ammo[ammoType];
-                }
-
-                raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
-                const intersects = raycaster.intersectObjects(mobs, true);
-                
-                if (intersects.length > 0) {
-                    let hitObject = intersects[0].object;
-                    while (hitObject.parent && hitObject.parent !== environmentGroup) {
-                        hitObject = hitObject.parent;
-                    }
-                    
-                    if (hitObject.userData && hitObject.userData.hp !== undefined) {
-                        hitObject.userData.hp -= weaponConfig.damage;
-                        
-                        hitObject.children.forEach(child => {
-                            if (child.material && child.material.emissive) {
-                                child.material.emissive.setHex(0xff0000);
-                                child.material.emissiveIntensity = 0.8;
-                                setTimeout(() => {
-                                    child.material.emissive.setHex(child.userData?.originalEmissive || 0x000000);
-                                    child.material.emissiveIntensity = child.userData?.originalEmissiveIntensity || 0;
-                                }, 100);
-                            }
-                        });
-                        
-                        const knockDir = new THREE.Vector3().subVectors(hitObject.position, camera.position).normalize();
-                        hitObject.position.x += knockDir.x * 0.5;
-                        hitObject.position.z += knockDir.z * 0.5;
-                        
-                        if (hitObject.userData.hp <= 0) {
-                            hitObject.children.forEach(child => {
-                                if (child.material) {
-                                    child.material.transparent = true;
-                                    child.material.opacity = 0.5;
-                                }
-                            });
-                            setTimeout(() => {
-                                environmentGroup.remove(hitObject);
-                                mobs = mobs.filter(m => m !== hitObject);
-                            }, 200);
-                            updateMessage(`${weaponConfig.name} destruiu o inimigo!`);
-                            if(Math.random() > 0.7) spawnItem('scrap', hitObject.position.x, hitObject.position.z);
-                            if(Math.random() > 0.85) spawnItem('ammo_pack', hitObject.position.x, hitObject.position.z);
-                            if(Math.random() > 0.9) spawnItem('stimpak', hitObject.position.x, hitObject.position.z);
-                        }
-                    }
-                }
-                
-                if (currentWeapon === 3 || currentWeapon === 4) {
-                    createTracerEffect();
-                }
-            }
-        });
-
-        function createTracerEffect() {
-            const tracerGeo = new THREE.CylinderGeometry(0.02, 0.02, 3, 4);
-            const tracerMat = new THREE.MeshBasicMaterial({ 
-                color: currentWeapon === 3 ? 0xff0000 : 0x00ff44,
-                transparent: true, opacity: 0.8
-            });
-            const tracer = new THREE.Mesh(tracerGeo, tracerMat);
-            tracer.position.copy(camera.position);
-            tracer.rotation.copy(camera.rotation);
-            tracer.position.y -= 0.2;
-            environmentGroup.add(tracer);
-            
-            const startTime = performance.now();
-            const animateTracer = () => {
-                const elapsed = performance.now() - startTime;
-                if (elapsed < 200) {
-                    tracer.position.add(camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(0.5));
-                    tracer.material.opacity = 0.8 * (1 - elapsed / 200);
-                    requestAnimationFrame(animateTracer);
-                } else {
-                    environmentGroup.remove(tracer);
-                }
-            };
-            animateTracer();
-        }
-
         // =========================================
-        // Sistema de Ambiente e Estruturas
+        // AMBIENTE OTIMIZADO
         // =========================================
-        let currentLevel = 'vault';
         const environmentGroup = new THREE.Group();
         scene.add(environmentGroup);
 
-        const vaultWallMat = new THREE.MeshStandardMaterial({ color: 0x5a665a, roughness: 0.8 });
-        const vaultFloorMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.9 });
-        const doorMat = new THREE.MeshStandardMaterial({ color: 0xffaa00, emissive: 0xffaa00, emissiveIntensity: 0.5 }); 
+        // Materiais reutilizáveis
+        const materials = {
+            vault: {
+                wall: new THREE.MeshStandardMaterial({ color: 0x5a6a5a, roughness: 0.6, metalness: 0.2 }),
+                floor: new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.5, metalness: 0.3 })
+            },
+            wasteland: {
+                ground: new THREE.MeshStandardMaterial({ color: 0xB8976E, roughness: 0.8 }),
+                building: new THREE.MeshStandardMaterial({ color: 0x8B7355, roughness: 0.7 }),
+                metal: new THREE.MeshStandardMaterial({ color: 0x666666, roughness: 0.4, metalness: 0.6 })
+            }
+        };
+
+        const doorMat = new THREE.MeshStandardMaterial({ 
+            color: 0xffaa00, 
+            emissive: 0xffaa00, 
+            emissiveIntensity: 0.8,
+            roughness: 0.3,
+            metalness: 0.5
+        });
 
         let interactables = [];
         let items = [];
@@ -380,274 +491,238 @@
         };
 
         function clearEnvironment() {
-            while(environmentGroup.children.length > 0) environmentGroup.remove(environmentGroup.children[0]); 
-            interactables = []; items = []; mobs = [];
+            while(environmentGroup.children.length > 0) {
+                environmentGroup.remove(environmentGroup.children[0]);
+            }
+            interactables = []; 
+            items = []; 
+            mobs = [];
         }
 
         function spawnItem(type, x, z) {
-            let color, geo, emissive = 0x000000, emissiveIntensity = 0;
-            switch(type) {
-                case 'scrap': color = 0xaaaaaa; geo = new THREE.BoxGeometry(0.4, 0.4, 0.4); break;
-                case 'water': color = 0x00aaff; geo = new THREE.CylinderGeometry(0.2, 0.2, 0.6, 8); emissive = 0x0044aa; emissiveIntensity = 0.3; break;
-                case 'stimpak': color = 0xff0000; geo = new THREE.BoxGeometry(0.3, 0.5, 0.1); emissive = 0x440000; emissiveIntensity = 0.4; break;
-                case 'shotgun': color = 0x8B4513; geo = new THREE.BoxGeometry(1.0, 0.3, 0.3); break;
-                case 'laser_rifle': color = 0xff0000; geo = new THREE.BoxGeometry(0.8, 0.2, 0.2); emissive = 0x440000; emissiveIntensity = 0.5; break;
-                case 'plasma_rifle': color = 0x00ff44; geo = new THREE.BoxGeometry(0.9, 0.3, 0.3); emissive = 0x004400; emissiveIntensity = 0.5; break;
-                case 'minigun': color = 0x333333; geo = new THREE.CylinderGeometry(0.3, 0.3, 0.8, 8); break;
-                case 'ammo_pack': color = 0xffaa00; geo = new THREE.BoxGeometry(0.3, 0.3, 0.3); emissive = 0x442200; emissiveIntensity = 0.3; break;
-                case 'helmet': color = 0xcccccc; geo = new THREE.SphereGeometry(0.3, 8, 8); break;
-                case 'vest': color = 0x4444ff; geo = new THREE.BoxGeometry(0.5, 0.6, 0.2); break;
-                case 'backpack': color = 0x228B22; geo = new THREE.BoxGeometry(0.4, 0.5, 0.3); break;
-                case 'boots': color = 0x8B4513; geo = new THREE.BoxGeometry(0.2, 0.3, 0.4); break;
-                case 'glove': color = 0xFFD700; geo = new THREE.BoxGeometry(0.2, 0.3, 0.1); break;
-            }
-            const material = new THREE.MeshStandardMaterial({ color: color, emissive: emissive, emissiveIntensity: emissiveIntensity, metalness: 0.3, roughness: 0.5 });
-            const item = new THREE.Mesh(geo, material);
-            item.position.set(x, 0.4, z);
+            const configs = {
+                scrap: { color: 0xcccccc, geo: new THREE.BoxGeometry(0.3, 0.3, 0.3) },
+                water: { color: 0x4488ff, geo: new THREE.CylinderGeometry(0.15, 0.15, 0.5, 6), emissive: 0x002244, emissiveIntensity: 0.3 },
+                stimpak: { color: 0xff2222, geo: new THREE.BoxGeometry(0.2, 0.4, 0.08), emissive: 0x440000, emissiveIntensity: 0.4 },
+                shotgun: { color: 0x6b4423, geo: new THREE.BoxGeometry(0.8, 0.2, 0.2) },
+                laser_rifle: { color: 0xff0000, geo: new THREE.BoxGeometry(0.7, 0.15, 0.15), emissive: 0x440000, emissiveIntensity: 0.6 },
+                plasma_rifle: { color: 0x00ff44, geo: new THREE.BoxGeometry(0.75, 0.2, 0.2), emissive: 0x004400, emissiveIntensity: 0.6 },
+                minigun: { color: 0x333333, geo: new THREE.CylinderGeometry(0.2, 0.2, 0.6, 6) },
+                ammo_pack: { color: 0xffaa00, geo: new THREE.BoxGeometry(0.25, 0.25, 0.25), emissive: 0x442200, emissiveIntensity: 0.3 },
+                helmet: { color: 0xcccccc, geo: new THREE.SphereGeometry(0.25, 6, 6) },
+                vest: { color: 0x4444ff, geo: new THREE.BoxGeometry(0.4, 0.5, 0.15) },
+                backpack: { color: 0x228B22, geo: new THREE.BoxGeometry(0.3, 0.4, 0.2) },
+                boots: { color: 0x6b4423, geo: new THREE.BoxGeometry(0.15, 0.25, 0.3) },
+                glove: { color: 0xFFD700, geo: new THREE.BoxGeometry(0.15, 0.2, 0.08) }
+            };
+            
+            const config = configs[type];
+            if (!config) return;
+            
+            const material = new THREE.MeshStandardMaterial({ 
+                color: config.color, 
+                emissive: config.emissive || 0x000000, 
+                emissiveIntensity: config.emissiveIntensity || 0,
+                roughness: 0.4,
+                metalness: 0.2
+            });
+            
+            const item = new THREE.Mesh(config.geo, material);
+            item.position.set(x, 0.3, z);
             item.userData = { type: type };
             item.castShadow = true;
             environmentGroup.add(item);
             items.push(item);
         }
 
-        function spawnChest(x, z) {
-            const chestGroup = new THREE.Group();
-            const base = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.7, 0.8), new THREE.MeshStandardMaterial({ color: 0x4a3a2a, roughness: 0.7 }));
-            base.position.y = 0.35;
-            base.castShadow = true;
-            const lid = new THREE.Mesh(new THREE.BoxGeometry(1.24, 0.2, 0.84), new THREE.MeshStandardMaterial({ color: 0x5c4836, roughness: 0.6 }));
-            lid.position.set(0, 0.75, 0);
-            lid.castShadow = true;
-            const lock = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8), new THREE.MeshStandardMaterial({ color: 0xffaa00, emissive: 0xffaa00, emissiveIntensity: 0.5 }));
-            lock.position.set(0, 0.7, 0.42);
-            chestGroup.add(base, lid, lock);
-            chestGroup.position.set(x, 0, z);
-            chestGroup.userData = { type: 'chest', opened: false, lidMesh: lid };
-            environmentGroup.add(chestGroup);
-            interactables.push(chestGroup);
-        }
-
-        function createMobSprite(type) {
-            const mobGroup = new THREE.Group();
+        function createMob(type) {
+            const group = new THREE.Group();
+            
             switch(type) {
                 case 'normal':
-                    const nBody = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.5, 1.5, 6), new THREE.MeshStandardMaterial({ color: 0x44ff44, emissive: 0x114411, emissiveIntensity: 0.3, roughness: 0.4 }));
-                    nBody.castShadow = true;
-                    const nHead = new THREE.Mesh(new THREE.SphereGeometry(0.3, 6, 6), new THREE.MeshStandardMaterial({ color: 0x66ff66, emissive: 0x224422, emissiveIntensity: 0.4 }));
-                    nHead.position.y = 1.0;
-                    nHead.castShadow = true;
-                    const nEyeL = new THREE.Mesh(new THREE.SphereGeometry(0.06, 4, 4), new THREE.MeshBasicMaterial({ color: 0xff0000 }));
-                    nEyeL.position.set(-0.1, 1.05, -0.25);
-                    const nEyeR = new THREE.Mesh(new THREE.SphereGeometry(0.06, 4, 4), new THREE.MeshBasicMaterial({ color: 0xff0000 }));
-                    nEyeR.position.set(0.1, 1.05, -0.25);
-                    mobGroup.add(nBody, nHead, nEyeL, nEyeR);
-                    mobGroup.userData = { type: 'normal', hp: 2, speed: 0.06, originalColor: 0x44ff44 };
+                    const nBody = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.35, 0.45, 1.4, 6),
+                        new THREE.MeshStandardMaterial({ color: 0x44ff44, emissive: 0x114411, emissiveIntensity: 0.3, roughness: 0.4 })
+                    );
+                    nBody.position.y = 0.7;
+                    const nHead = new THREE.Mesh(
+                        new THREE.SphereGeometry(0.25, 6, 6),
+                        new THREE.MeshStandardMaterial({ color: 0x66ff66, emissive: 0x224422, emissiveIntensity: 0.4 })
+                    );
+                    nHead.position.y = 1.5;
+                    group.add(nBody, nHead);
+                    group.userData = { type: 'normal', hp: 3, speed: 0.04 };
                     break;
+                    
                 case 'strong':
-                    const sBody = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.7, 2.0, 8), new THREE.MeshStandardMaterial({ color: 0xff4444, emissive: 0x441111, emissiveIntensity: 0.2, roughness: 0.5 }));
-                    sBody.castShadow = true;
-                    const sHead = new THREE.Mesh(new THREE.SphereGeometry(0.35, 8, 8), new THREE.MeshStandardMaterial({ color: 0xff6666, emissive: 0x442222, emissiveIntensity: 0.3 }));
-                    sHead.position.y = 1.3;
-                    sHead.castShadow = true;
-                    const hornL = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.3, 4), new THREE.MeshStandardMaterial({ color: 0x8B4513 }));
-                    hornL.position.set(-0.2, 1.6, 0);
-                    hornL.rotation.z = -0.3;
-                    const hornR = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.3, 4), new THREE.MeshStandardMaterial({ color: 0x8B4513 }));
-                    hornR.position.set(0.2, 1.6, 0);
-                    hornR.rotation.z = 0.3;
-                    mobGroup.add(sBody, sHead, hornL, hornR);
-                    mobGroup.userData = { type: 'strong', hp: 6, speed: 0.04, originalColor: 0xff4444 };
+                    const sBody = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.55, 0.65, 1.8, 6),
+                        new THREE.MeshStandardMaterial({ color: 0xff4444, emissive: 0x441111, emissiveIntensity: 0.2, roughness: 0.5 })
+                    );
+                    sBody.position.y = 0.9;
+                    const sHead = new THREE.Mesh(
+                        new THREE.SphereGeometry(0.3, 6, 6),
+                        new THREE.MeshStandardMaterial({ color: 0xff6666, emissive: 0x442222, emissiveIntensity: 0.3 })
+                    );
+                    sHead.position.y = 1.9;
+                    group.add(sBody, sHead);
+                    group.userData = { type: 'strong', hp: 8, speed: 0.03 };
                     break;
+                    
                 case 'fast':
-                    const fBody = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.35, 1.2, 6), new THREE.MeshStandardMaterial({ color: 0xffff00, emissive: 0x444400, emissiveIntensity: 0.4, roughness: 0.3 }));
-                    fBody.castShadow = true;
-                    const fHead = new THREE.Mesh(new THREE.SphereGeometry(0.25, 6, 6), new THREE.MeshStandardMaterial({ color: 0xffff44, emissive: 0x444400, emissiveIntensity: 0.5 }));
-                    fHead.position.y = 0.8;
-                    fHead.castShadow = true;
-                    const antL = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.2, 4), new THREE.MeshBasicMaterial({ color: 0xffff00 }));
-                    antL.position.set(-0.1, 1.05, 0);
-                    const antR = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.2, 4), new THREE.MeshBasicMaterial({ color: 0xffff00 }));
-                    antR.position.set(0.1, 1.05, 0);
-                    mobGroup.add(fBody, fHead, antL, antR);
-                    mobGroup.userData = { type: 'fast', hp: 3, speed: 0.12, originalColor: 0xffff00 };
+                    const fBody = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.25, 0.3, 1.1, 6),
+                        new THREE.MeshStandardMaterial({ color: 0xffff00, emissive: 0x444400, emissiveIntensity: 0.4, roughness: 0.3 })
+                    );
+                    fBody.position.y = 0.55;
+                    const fHead = new THREE.Mesh(
+                        new THREE.SphereGeometry(0.2, 6, 6),
+                        new THREE.MeshStandardMaterial({ color: 0xffff44, emissive: 0x444400, emissiveIntensity: 0.5 })
+                    );
+                    fHead.position.y = 1.2;
+                    group.add(fBody, fHead);
+                    group.userData = { type: 'fast', hp: 2, speed: 0.08 };
                     break;
+                    
                 case 'boss':
-                    const bBody = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.9, 2.5, 8), new THREE.MeshStandardMaterial({ color: 0xff00ff, emissive: 0x440044, emissiveIntensity: 0.3, roughness: 0.4 }));
-                    bBody.castShadow = true;
-                    const bHead = new THREE.Mesh(new THREE.SphereGeometry(0.45, 8, 8), new THREE.MeshStandardMaterial({ color: 0xff44ff, emissive: 0x440044, emissiveIntensity: 0.4 }));
-                    bHead.position.y = 1.6;
-                    bHead.castShadow = true;
-                    for(let i = 0; i < 8; i++) {
-                        const spike = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.4, 4), new THREE.MeshStandardMaterial({ color: 0x880088, emissive: 0x440044, emissiveIntensity: 0.5 }));
-                        const angle = (i / 8) * Math.PI * 2;
-                        spike.position.set(Math.cos(angle) * 0.4, 1.9, Math.sin(angle) * 0.4);
-                        spike.rotation.z = Math.cos(angle) * 0.3;
-                        spike.rotation.x = Math.sin(angle) * 0.3;
-                        mobGroup.add(spike);
-                    }
-                    for(let i = 0; i < 4; i++) {
-                        const eye = new THREE.Mesh(new THREE.SphereGeometry(0.05, 4, 4), new THREE.MeshBasicMaterial({ color: 0xffffff }));
-                        const angle = (i / 4) * Math.PI * 2 + Math.PI / 4;
-                        eye.position.set(Math.cos(angle) * 0.2, 1.65, Math.sin(angle) * 0.2);
-                        mobGroup.add(eye);
-                    }
-                    mobGroup.add(bBody, bHead);
-                    mobGroup.userData = { type: 'boss', hp: 20, speed: 0.03, originalColor: 0xff00ff };
+                    const bBody = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.7, 0.8, 2.2, 8),
+                        new THREE.MeshStandardMaterial({ color: 0xff00ff, emissive: 0x440044, emissiveIntensity: 0.3, roughness: 0.4 })
+                    );
+                    bBody.position.y = 1.1;
+                    const bHead = new THREE.Mesh(
+                        new THREE.SphereGeometry(0.4, 8, 8),
+                        new THREE.MeshStandardMaterial({ color: 0xff44ff, emissive: 0x440044, emissiveIntensity: 0.4 })
+                    );
+                    bHead.position.y = 2.3;
+                    group.add(bBody, bHead);
+                    group.userData = { type: 'boss', hp: 25, speed: 0.02 };
                     break;
             }
-            mobGroup.children.forEach(child => {
-                if (child.material && child.material.emissive) {
-                    child.userData = child.userData || {};
-                    child.userData.originalEmissive = child.material.emissive.getHex();
-                    child.userData.originalEmissiveIntensity = child.material.emissiveIntensity;
-                }
-            });
-            return mobGroup;
+            
+            group.castShadow = true;
+            group.receiveShadow = true;
+            return group;
         }
 
         function spawnMob(x, z, type = 'normal') {
-            const mobGroup = createMobSprite(type);
-            mobGroup.position.set(x, 0, z);
-            environmentGroup.add(mobGroup);
-            mobs.push(mobGroup);
+            const mob = createMob(type);
+            mob.position.set(x, 0, z);
+            environmentGroup.add(mob);
+            mobs.push(mob);
         }
 
-        function spawnAbandonedHouse(x, z) {
-            const group = new THREE.Group();
-            const wallMat = new THREE.MeshStandardMaterial({ color: 0x8B7355, roughness: 0.9 });
-            const frontWall = new THREE.Mesh(new THREE.BoxGeometry(6, 3, 0.3), wallMat);
-            frontWall.position.set(x, 1.5, z - 3);
-            frontWall.castShadow = true; frontWall.receiveShadow = true;
-            const backWall = new THREE.Mesh(new THREE.BoxGeometry(6, 3, 0.3), wallMat);
-            backWall.position.set(x, 1.5, z + 3);
-            backWall.castShadow = true; backWall.receiveShadow = true;
-            const leftWall = new THREE.Mesh(new THREE.BoxGeometry(0.3, 3, 6), wallMat);
-            leftWall.position.set(x - 3, 1.5, z);
-            leftWall.castShadow = true;
-            const roofMat = new THREE.MeshStandardMaterial({ color: 0x654321, roughness: 0.8 });
-            const roofLeft = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.2, 6.5), roofMat);
-            roofLeft.position.set(x - 1.5, 3.2, z);
-            roofLeft.rotation.z = 0.3;
-            roofLeft.castShadow = true;
-            const roofRight = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.2, 6.5), roofMat);
-            roofRight.position.set(x + 1.5, 3.2, z);
-            roofRight.rotation.z = -0.3;
-            roofRight.castShadow = true;
-            group.add(frontWall, backWall, leftWall, roofLeft, roofRight);
-            environmentGroup.add(group);
-            if(Math.random() > 0.4) spawnItem('scrap', x, z);
-            if(Math.random() > 0.7) spawnItem('ammo_pack', x + 1, z);
-        }
-
-        function spawnRuinedStore(x, z) {
-            const group = new THREE.Group();
-            const wallMat = new THREE.MeshStandardMaterial({ color: 0x999999, roughness: 0.7 });
-            const wall1 = new THREE.Mesh(new THREE.BoxGeometry(8, 3, 0.3), wallMat);
-            wall1.position.set(x, 1.5, z - 4);
-            wall1.castShadow = true;
-            const wall2 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 3, 8), wallMat);
-            wall2.position.set(x - 4, 1.5, z);
-            const wall3 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 3, 8), wallMat);
-            wall3.position.set(x + 4, 1.5, z);
-            group.add(wall1, wall2, wall3);
-            environmentGroup.add(group);
-            spawnItem('scrap', x, z);
-            spawnItem('water', x + 1, z + 1);
-            if(Math.random() > 0.6) spawnItem('ammo_pack', x - 1, z);
-        }
-
-        function spawnGasStation(x, z) {
-            const group = new THREE.Group();
-            const buildingMat = new THREE.MeshStandardMaterial({ color: 0xCCCCCC, roughness: 0.8 });
-            const building = new THREE.Mesh(new THREE.BoxGeometry(5, 3, 4), buildingMat);
-            building.position.set(x, 1.5, z);
-            building.castShadow = true;
-            const roof = new THREE.Mesh(new THREE.BoxGeometry(8, 0.3, 6), new THREE.MeshStandardMaterial({ color: 0xFF4444, roughness: 0.7 }));
-            roof.position.set(x, 3.5, z);
-            roof.castShadow = true;
-            group.add(building, roof);
-            environmentGroup.add(group);
-            if(Math.random() > 0.5) spawnItem('water', x + 2, z + 2);
-            if(Math.random() > 0.7) spawnItem('scrap', x - 2, z - 1);
-        }
-
-        function spawnDestroyedCar(x, z) {
-            const car = new THREE.Group();
-            const body = new THREE.Mesh(new THREE.BoxGeometry(2, 0.6, 4), new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.6, metalness: 0.4 }));
-            body.position.y = 0.4;
-            body.castShadow = true;
-            const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.5, 1.5), new THREE.MeshStandardMaterial({ color: 0x666666, roughness: 0.5, metalness: 0.3 }));
-            cabin.position.set(0, 0.9, -0.5);
-            cabin.castShadow = true;
-            car.add(body, cabin);
-            car.position.set(x, 0, z);
-            car.rotation.y = Math.random() * Math.PI * 2;
-            environmentGroup.add(car);
-            if(Math.random() > 0.6) spawnItem('scrap', x, z);
-        }
-
-        function spawnWatchtower(x, z) {
-            const group = new THREE.Group();
-            const baseMat = new THREE.MeshStandardMaterial({ color: 0x666666, roughness: 0.7 });
-            for(let i = 0; i < 4; i++) {
-                const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.2, 6, 6), baseMat);
-                pillar.position.set(i % 2 === 0 ? -0.8 : 0.8, 3, i < 2 ? -0.8 : 0.8);
-                pillar.castShadow = true;
-                group.add(pillar);
+        function spawnStructure(x, z) {
+            const type = Math.random();
+            
+            if (type < 0.25) {
+                // Casa abandonada
+                const h = 3;
+                const walls = [
+                    { pos: [x, h/2, z-3], size: [6, h, 0.3] },
+                    { pos: [x, h/2, z+3], size: [6, h, 0.3] },
+                    { pos: [x-3, h/2, z], size: [0.3, h, 6] }
+                ];
+                
+                walls.forEach(w => {
+                    const wall = new THREE.Mesh(
+                        new THREE.BoxGeometry(...w.size),
+                        materials.wasteland.building
+                    );
+                    wall.position.set(...w.pos);
+                    wall.castShadow = true;
+                    wall.receiveShadow = true;
+                    environmentGroup.add(wall);
+                });
+                
+                // Telhado
+                const roof = new THREE.Mesh(
+                    new THREE.ConeGeometry(4, 1.5, 4),
+                    new THREE.MeshStandardMaterial({ color: 0x654321, roughness: 0.7 })
+                );
+                roof.position.set(x, 3.5, z);
+                roof.rotation.y = Math.PI / 4;
+                roof.castShadow = true;
+                environmentGroup.add(roof);
+            } else if (type < 0.5) {
+                // Torre de vigia
+                const pillars = 4;
+                for(let i = 0; i < pillars; i++) {
+                    const pillar = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.1, 0.15, 5, 6),
+                        materials.wasteland.metal
+                    );
+                    pillar.position.set(
+                        i % 2 === 0 ? x - 0.6 : x + 0.6,
+                        2.5,
+                        i < 2 ? z - 0.6 : z + 0.6
+                    );
+                    pillar.castShadow = true;
+                    environmentGroup.add(pillar);
+                }
+                const platform = new THREE.Mesh(
+                    new THREE.BoxGeometry(2.5, 0.2, 2.5),
+                    materials.wasteland.metal
+                );
+                platform.position.set(x, 5, z);
+                platform.castShadow = true;
+                environmentGroup.add(platform);
+            } else if (type < 0.7) {
+                // Carro destruído
+                const car = new THREE.Group();
+                const body = new THREE.Mesh(
+                    new THREE.BoxGeometry(1.8, 0.5, 3.5),
+                    new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.4, metalness: 0.5 })
+                );
+                body.position.y = 0.35;
+                body.castShadow = true;
+                const cabin = new THREE.Mesh(
+                    new THREE.BoxGeometry(1.6, 0.4, 1.3),
+                    new THREE.MeshStandardMaterial({ color: 0x666666, roughness: 0.3, metalness: 0.4 })
+                );
+                cabin.position.set(0, 0.8, -0.4);
+                cabin.castShadow = true;
+                car.add(body, cabin);
+                car.position.set(x, 0, z);
+                car.rotation.y = Math.random() * Math.PI * 2;
+                environmentGroup.add(car);
+            } else {
+                // Fogueira
+                const stones = 5;
+                for(let i = 0; i < stones; i++) {
+                    const stone = new THREE.Mesh(
+                        new THREE.SphereGeometry(0.15, 4, 4),
+                        new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.9 })
+                    );
+                    const angle = (i / stones) * Math.PI * 2;
+                    stone.position.set(Math.cos(angle) * 0.6, 0.08, Math.sin(angle) * 0.6);
+                    stone.position.x += x;
+                    stone.position.z += z;
+                    environmentGroup.add(stone);
+                }
+                const fire = new THREE.Mesh(
+                    new THREE.ConeGeometry(0.3, 0.8, 4),
+                    new THREE.MeshBasicMaterial({ color: 0xFF6600, transparent: true, opacity: 0.7 })
+                );
+                fire.position.set(x, 0.4, z);
+                environmentGroup.add(fire);
             }
-            const platform = new THREE.Mesh(new THREE.BoxGeometry(3, 0.3, 3), baseMat);
-            platform.position.y = 6;
-            platform.castShadow = true;
-            group.add(platform);
-            group.position.set(x, 0, z);
-            environmentGroup.add(group);
-            if(Math.random() > 0.5) spawnItem('ammo_pack', x, z + 2);
-            if(Math.random() > 0.8) spawnItem('helmet', x + 1, z);
-        }
-
-        function spawnCampfire(x, z) {
-            const group = new THREE.Group();
-            const stoneMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.9 });
-            for(let i = 0; i < 6; i++) {
-                const stone = new THREE.Mesh(new THREE.SphereGeometry(0.2, 4, 4), stoneMat);
-                const angle = (i / 6) * Math.PI * 2;
-                stone.position.set(Math.cos(angle) * 0.8, 0.1, Math.sin(angle) * 0.8);
-                group.add(stone);
-            }
-            const fire = new THREE.Mesh(new THREE.ConeGeometry(0.4, 1, 4), new THREE.MeshBasicMaterial({ color: 0xFF6600, transparent: true, opacity: 0.8 }));
-            fire.position.y = 0.5;
-            group.add(fire);
-            group.position.set(x, 0, z);
-            environmentGroup.add(group);
-            if(Math.random() > 0.4) spawnItem('water', x + 1, z + 1);
-            if(Math.random() > 0.6) spawnItem('scrap', x - 1, z);
-        }
-
-        function spawnRuinedHouse(x, z) {
-            const houseMat = new THREE.MeshStandardMaterial({ color: 0x665544, roughness: 0.8 });
-            const w1 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 3, 6), houseMat); w1.position.set(x - 3, 1.5, z);
-            const w2 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 3, 6), houseMat); w2.position.set(x + 3, 1.5, z);
-            const w3 = new THREE.Mesh(new THREE.BoxGeometry(6, 3, 0.5), houseMat); w3.position.set(x, 1.5, z - 3);
-            const roof = new THREE.Mesh(new THREE.ConeGeometry(4, 1.5, 4), new THREE.MeshStandardMaterial({ color: 0x8B0000, roughness: 0.7 }));
-            roof.position.set(x, 3.5, z);
-            roof.rotation.y = Math.PI / 4;
-            environmentGroup.add(w1, w2, w3, roof);
-            if(Math.random() > 0.5) spawnItem('ammo_pack', x, z);
-            if(Math.random() > 0.7) spawnItem('scrap', x + 1, z + 1);
         }
 
         function initVault() {
             clearEnvironment();
-            currentLevel = 'vault';
-            scene.background = new THREE.Color(0x1a261a);
-            scene.fog = new THREE.Fog(0x1a261a, 5, 30);
-            ambientLight.intensity = 2.5;
+            scene.background = new THREE.Color(0x1a1a2e);
+            scene.fog = new THREE.Fog(0x1a1a2e, 10, 40);
             
-            const floor = new THREE.Mesh(new THREE.PlaneGeometry(150, 150), vaultFloorMat);
+            const floor = new THREE.Mesh(
+                new THREE.PlaneGeometry(100, 100),
+                materials.vault.floor
+            );
             floor.rotation.x = -Math.PI / 2;
             floor.receiveShadow = true;
             environmentGroup.add(floor);
 
+            // Layout do vault otimizado
             const vaultMap = [
                 [1,1,1,1,2,1,1,1,1,1],
                 [1,0,0,0,0,0,0,0,0,1],
@@ -658,131 +733,157 @@
                 [1,1,1,1,1,1,1,1,1,1]
             ];
 
-            const tileSize = 4;
-            for(let z = 0; z < vaultMap.length; z++) {
-                for(let x = 0; x < vaultMap[z].length; x++) {
-                    const posX = (x - vaultMap[0].length/2) * tileSize;
+            const tileSize = 3.5;
+            vaultMap.forEach((row, z) => {
+                row.forEach((cell, x) => {
+                    const posX = (x - row.length/2) * tileSize;
                     const posZ = (z - vaultMap.length/2) * tileSize;
-                    if(vaultMap[z][x] === 1) {
-                        const wall = new THREE.Mesh(new THREE.BoxGeometry(tileSize, tileSize * 1.5, tileSize), vaultWallMat);
-                        wall.position.set(posX, (tileSize * 1.5) / 2, posZ);
-                        wall.castShadow = true; wall.receiveShadow = true;
+                    
+                    if(cell === 1) {
+                        const wall = new THREE.Mesh(
+                            new THREE.BoxGeometry(tileSize, tileSize * 1.3, tileSize),
+                            materials.vault.wall
+                        );
+                        wall.position.set(posX, (tileSize * 1.3) / 2, posZ);
+                        wall.castShadow = true;
+                        wall.receiveShadow = true;
                         environmentGroup.add(wall);
-                    } else if (vaultMap[z][x] === 2) {
-                        const door = new THREE.Mesh(new THREE.BoxGeometry(tileSize, tileSize * 1.5, 0.5), doorMat);
-                        door.position.set(posX, (tileSize * 1.5) / 2, posZ);
+                    } else if(cell === 2) {
+                        const door = new THREE.Mesh(
+                            new THREE.BoxGeometry(tileSize, tileSize * 1.3, 0.4),
+                            doorMat
+                        );
+                        door.position.set(posX, (tileSize * 1.3) / 2, posZ);
                         door.userData = { type: 'door' };
                         environmentGroup.add(door);
                         interactables.push(door);
                     }
-                }
-            }
+                });
+            });
             
             spawnItem('scrap', 0, 0);
-            spawnItem('stimpak', -8, -4);
-            spawnItem('shotgun', 8, -8);
-            spawnItem('ammo_pack', -4, 4);
-            spawnChest(6, -8);
-            spawnMob(-4, -4, 'normal');
+            spawnItem('stimpak', -7, -3);
+            spawnItem('shotgun', 7, -7);
+            spawnItem('ammo_pack', -3, 4);
+            spawnMob(-3, -3, 'normal');
             
-            // Posicionar câmera no início do vault
-            camera.position.set(0, 1.6, 8);
-            updateMessage("Bem-vindo ao Vault! Encontre a porta amarela para sair.");
+            camera.position.set(0, 1.6, 7);
+            updateMessage("🏚️ Vault 13 - Encontre a porta amarela!");
         }
 
         function initWasteland() {
             clearEnvironment();
-            currentLevel = 'wasteland';
             scene.background = new THREE.Color(0x87CEEB);
-            scene.fog = new THREE.Fog(0xB0C4DE, 30, 200);
-            ambientLight.intensity = 3.5;
+            scene.fog = new THREE.Fog(0xB0C4DE, 40, 180);
             
-            const floor = new THREE.Mesh(new THREE.PlaneGeometry(300, 300), new THREE.MeshStandardMaterial({ color: 0xC4A46C, roughness: 0.8 }));
-            floor.rotation.x = -Math.PI / 2;
-            floor.receiveShadow = true;
-            environmentGroup.add(floor);
+            const ground = new THREE.Mesh(
+                new THREE.PlaneGeometry(280, 280),
+                materials.wasteland.ground
+            );
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            environmentGroup.add(ground);
             
+            // Decoração do chão
+            for(let i = 0; i < 40; i++) {
+                const grass = new THREE.Mesh(
+                    new THREE.CircleGeometry(0.5 + Math.random() * 1.5, 5),
+                    new THREE.MeshStandardMaterial({ 
+                        color: 0x8B9A46, 
+                        roughness: 0.9, 
+                        transparent: true, 
+                        opacity: 0.15 
+                    })
+                );
+                grass.rotation.x = -Math.PI / 2;
+                grass.position.set(
+                    (Math.random() - 0.5) * 180,
+                    0.01,
+                    (Math.random() - 0.5) * 180
+                );
+                environmentGroup.add(grass);
+            }
+            
+            // Estruturas e mobs
             for(let i = 0; i < 30; i++) {
-                const grassPatch = new THREE.Mesh(new THREE.CircleGeometry(1 + Math.random() * 2, 8), new THREE.MeshStandardMaterial({ color: 0x8B9A46, roughness: 0.9, transparent: true, opacity: 0.2 }));
-                grassPatch.rotation.x = -Math.PI / 2;
-                grassPatch.position.set((Math.random() - 0.5) * 200, 0.01, (Math.random() - 0.5) * 200);
-                environmentGroup.add(grassPatch);
-            }
-
-            for(let i = 0; i < 15; i++) {
-                const cloud = new THREE.Mesh(new THREE.SphereGeometry(2 + Math.random() * 3, 8, 8), new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.4, roughness: 1 }));
-                cloud.position.set((Math.random() - 0.5) * 150, 20 + Math.random() * 15, (Math.random() - 0.5) * 150);
-                cloud.scale.y = 0.3;
-                environmentGroup.add(cloud);
-            }
-
-            for(let i = 0; i < 25; i++) {
-                const rx = (Math.random() - 0.5) * 120;
-                const rz = (Math.random() - 0.5) * 120;
-                if(Math.abs(rx) > 10 && Math.abs(rz) > 10) {
-                    const structureType = Math.random();
-                    if(structureType < 0.3) spawnAbandonedHouse(rx, rz);
-                    else if(structureType < 0.5) spawnRuinedStore(rx, rz);
-                    else if(structureType < 0.65) spawnGasStation(rx, rz);
-                    else if(structureType < 0.75) spawnWatchtower(rx, rz);
-                    else if(structureType < 0.85) spawnRuinedHouse(rx, rz);
-                    else spawnCampfire(rx, rz);
+                const rx = (Math.random() - 0.5) * 130;
+                const rz = (Math.random() - 0.5) * 130;
+                
+                if(Math.abs(rx) > 8 && Math.abs(rz) > 8) {
+                    spawnStructure(rx, rz);
                     
-                    if(Math.random() > 0.5) spawnDestroyedCar(rx + (Math.random() - 0.5) * 10, rz + (Math.random() - 0.5) * 10);
+                    if(Math.random() > 0.4) {
+                        const mobTypes = ['normal', 'normal', 'strong', 'fast', 'boss'];
+                        const mobType = mobTypes[Math.floor(Math.random() * mobTypes.length)];
+                        spawnMob(rx + 4, rz + 4, mobType);
+                    }
                     
-                    const mobType = Math.random();
-                    if(mobType < 0.4) spawnMob(rx + 5, rz + 5, 'normal');
-                    else if(mobType < 0.65) spawnMob(rx - 5, rz - 3, 'strong');
-                    else if(mobType < 0.85) spawnMob(rx + 3, rz - 5, 'fast');
-                    else spawnMob(rx - 3, rz + 3, 'boss');
-                    
-                    if(Math.random() > 0.5) spawnChest(rx, rz);
+                    if(Math.random() > 0.6) {
+                        spawnItem('scrap', rx, rz);
+                    }
+                    if(Math.random() > 0.8) {
+                        spawnItem('ammo_pack', rx + 2, rz - 2);
+                    }
                 }
             }
             
-            spawnMob(0, -40, 'boss');
-            spawnItem('laser_rifle', 0, -8);
-            spawnItem('plasma_rifle', -18, 12);
-            spawnItem('minigun', 22, 8);
-            spawnItem('shotgun', -8, -12);
-            spawnItem('helmet', -12, -18);
-            spawnItem('vest', 18, -22);
-            spawnItem('backpack', -8, 18);
-            spawnItem('boots', 28, -12);
-            spawnItem('glove', -22, -8);
+            // Itens especiais
+            spawnMob(0, -30, 'boss');
+            spawnItem('laser_rifle', 0, -6);
+            spawnItem('plasma_rifle', -15, 10);
+            spawnItem('minigun', 20, 6);
+            spawnItem('helmet', -10, -15);
+            spawnItem('vest', 15, -18);
+            spawnItem('backpack', -6, 15);
+            spawnItem('boots', 25, -10);
+            spawnItem('glove', -20, -6);
             
-            for(let i = 0; i < 10; i++) {
-                spawnItem('ammo_pack', (Math.random() - 0.5) * 80, (Math.random() - 0.5) * 80);
+            for(let i = 0; i < 15; i++) {
+                spawnItem('ammo_pack', (Math.random() - 0.5) * 100, (Math.random() - 0.5) * 100);
+                spawnItem('stimpak', (Math.random() - 0.5) * 90, (Math.random() - 0.5) * 90);
             }
             
             camera.position.set(0, 1.6, 0);
-            updateMessage("Você entrou no Ermo. O céu está limpo, mas o perigo espreita!");
+            updateMessage("☢️ Ermo - Sobreviva e explore!");
         }
 
         initVault();
 
         // =========================================
-        // Controles e UI
+        // CONTROLES OTIMIZADOS
         // =========================================
         const controls = new PointerLockControls(camera, document.body);
         const menu = document.getElementById('menu');
         const inventoryOverlay = document.getElementById('inventory-overlay');
         let isInventoryOpen = false;
 
-        menu.addEventListener('click', () => { if (!isInventoryOpen) controls.lock(); });
-        controls.addEventListener('lock', () => { menu.style.display = 'none'; });
-        controls.addEventListener('unlock', () => { if (!isInventoryOpen) menu.style.display = 'flex'; });
+        menu.addEventListener('click', () => { 
+            if (!isInventoryOpen) controls.lock(); 
+        });
+        controls.addEventListener('lock', () => { 
+            menu.style.display = 'none'; 
+        });
+        controls.addEventListener('unlock', () => { 
+            if (!isInventoryOpen) menu.style.display = 'flex'; 
+        });
 
         function updateMessage(text) {
             const box = document.getElementById('message-box');
             box.innerText = text;
-            setTimeout(() => { if(box.innerText === text) box.innerText = "Explorando..."; }, 3500);
+            box.style.animation = 'none';
+            box.offsetHeight;
+            box.style.animation = 'fadeIn 0.3s';
+            setTimeout(() => { 
+                if(box.innerText === text) box.innerText = "🎮 Explorando..."; 
+            }, 4000);
         }
 
         function updateUI() {
             document.getElementById('hp-count').innerText = playerHP;
             document.getElementById('armor-count').innerText = playerArmor;
             document.getElementById('stimpak-count').innerText = inventory.stimpak;
+            document.getElementById('ammo-count').innerText = ammo[weaponConfigs[currentWeapon].ammoType];
+            
             document.getElementById('inv-scrap').innerText = inventory.scrap;
             document.getElementById('inv-water').innerText = inventory.water;
             document.getElementById('inv-stimpak').innerText = inventory.stimpak;
@@ -794,23 +895,30 @@
             document.getElementById('inv-glove').innerText = inventory.glove || 'Nenhuma';
             
             let defense = 0;
-            if(inventory.helmet) defense += 10;
-            if(inventory.vest) defense += 20;
-            if(inventory.boots) defense += 5;
-            if(inventory.glove) defense += 5;
+            if(inventory.helmet) defense += 15;
+            if(inventory.vest) defense += 25;
+            if(inventory.boots) defense += 10;
+            if(inventory.glove) defense += 10;
             playerArmor = defense;
             document.getElementById('inv-defense').innerText = defense;
+            
+            // Atualizar cor do HP
+            const hpElement = document.getElementById('hp-count');
+            if(playerHP <= 25) hpElement.style.color = '#ff4444';
+            else if(playerHP <= 50) hpElement.style.color = '#ffaa00';
+            else hpElement.style.color = '#39ff14';
         }
 
-        let moveF = false, moveB = false, moveL = false, moveR = false;
-        const prevTime = performance.now();
-
+        const keys = { w: false, a: false, s: false, d: false };
+        
         document.addEventListener('keydown', (e) => {
-            switch (e.code) {
-                case 'KeyW': moveF = true; break;
-                case 'KeyA': moveL = true; break;
-                case 'KeyS': moveB = true; break;
-                case 'KeyD': moveR = true; break;
+            if (!controls.isLocked && e.code !== 'KeyI' && e.code !== 'Tab') return;
+            
+            switch(e.code) {
+                case 'KeyW': keys.w = true; break;
+                case 'KeyA': keys.a = true; break;
+                case 'KeyS': keys.s = true; break;
+                case 'KeyD': keys.d = true; break;
                 case 'Digit1': equipWeapon(1); break;
                 case 'Digit2': equipWeapon(2); break;
                 case 'Digit3': equipWeapon(3); break;
@@ -818,137 +926,216 @@
                 case 'Digit5': equipWeapon(5); break;
                 case 'KeyH': 
                     if(inventory.stimpak > 0 && playerHP < 100) {
-                        inventory.stimpak--; playerHP = Math.min(100, playerHP + 40);
-                        updateUI(); updateMessage("Stimpak usado (+40 HP)");
+                        inventory.stimpak--;
+                        playerHP = Math.min(100, playerHP + 40);
+                        updateUI();
+                        updateMessage("💉 Stimpak usado! +40 HP");
                     }
                     break;
                 case 'KeyI': case 'Tab': 
-                    e.preventDefault(); 
+                    e.preventDefault();
                     isInventoryOpen = !isInventoryOpen;
                     inventoryOverlay.style.display = isInventoryOpen ? 'flex' : 'none';
                     isInventoryOpen ? controls.unlock() : controls.lock();
                     break;
-                case 'KeyE': interact(); break;
+                case 'KeyE': 
+                    if (controls.isLocked) interact();
+                    break;
             }
         });
 
         document.addEventListener('keyup', (e) => {
-            switch (e.code) {
-                case 'KeyW': moveF = false; break;
-                case 'KeyA': moveL = false; break;
-                case 'KeyS': moveB = false; break;
-                case 'KeyD': moveR = false; break;
+            switch(e.code) {
+                case 'KeyW': keys.w = false; break;
+                case 'KeyA': keys.a = false; break;
+                case 'KeyS': keys.s = false; break;
+                case 'KeyD': keys.d = false; break;
+            }
+        });
+
+        document.addEventListener('mousedown', () => {
+            if (!controls.isLocked) return;
+            
+            const currentTime = performance.now();
+            const weaponConfig = weaponConfigs[currentWeapon];
+            if (currentTime - lastFireTime < weaponConfig.fireRate) return;
+            lastFireTime = currentTime;
+            
+            shootAnimation();
+            
+            const ammoType = weaponConfig.ammoType;
+            if (ammo[ammoType] <= 0 && ammoType !== 'pistol') {
+                updateMessage("⚠️ Sem munição! Use pistola [1]");
+                return;
+            }
+            
+            if (ammoType !== 'pistol') {
+                ammo[ammoType]--;
+                document.getElementById('ammo-count').innerText = ammo[ammoType];
+            }
+
+            // Raycast para dano
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+            const intersects = raycaster.intersectObjects(mobs, true);
+            
+            if (intersects.length > 0) {
+                let hitObject = intersects[0].object;
+                while (hitObject.parent && hitObject.parent !== environmentGroup) {
+                    hitObject = hitObject.parent;
+                }
+                
+                if (hitObject.userData && hitObject.userData.hp !== undefined) {
+                    hitObject.userData.hp -= weaponConfig.damage;
+                    
+                    // Efeito de hit
+                    hitObject.children.forEach(child => {
+                        if (child.material && child.material.emissive) {
+                            child.material.emissive.setHex(0xff0000);
+                            child.material.emissiveIntensity = 1.0;
+                            setTimeout(() => {
+                                child.material.emissive.setHex(0x000000);
+                                child.material.emissiveIntensity = 0;
+                            }, 100);
+                        }
+                    });
+                    
+                    if (hitObject.userData.hp <= 0) {
+                        hitObject.children.forEach(child => {
+                            if (child.material) {
+                                child.material.transparent = true;
+                                child.material.opacity = 0.3;
+                            }
+                        });
+                        setTimeout(() => {
+                            environmentGroup.remove(hitObject);
+                            mobs = mobs.filter(m => m !== hitObject);
+                        }, 300);
+                        
+                        updateMessage(`💀 ${weaponConfig.name} eliminou o inimigo!`);
+                        
+                        if(Math.random() > 0.6) spawnItem('scrap', hitObject.position.x, hitObject.position.z);
+                        if(Math.random() > 0.8) spawnItem('ammo_pack', hitObject.position.x, hitObject.position.z);
+                        if(Math.random() > 0.9) spawnItem('stimpak', hitObject.position.x, hitObject.position.z);
+                    }
+                }
             }
         });
 
         function interact() {
             for (let obj of interactables) {
-                if (camera.position.distanceTo(obj.position) < 3.5) {
+                if (camera.position.distanceTo(obj.position) < 3) {
                     if (obj.userData.type === 'door' && currentLevel === 'vault') {
                         initWasteland();
                         return;
                     }
-                    if (obj.userData.type === 'chest' && !obj.userData.opened) {
-                        obj.userData.opened = true;
-                        obj.userData.lidMesh.position.z -= 0.3;
-                        obj.userData.lidMesh.rotation.x = -Math.PI / 4;
-                        inventory.scrap += Math.floor(Math.random() * 5) + 1;
-                        inventory.water += Math.floor(Math.random() * 3) + 1;
-                        if(Math.random() > 0.4) inventory.stimpak += Math.floor(Math.random() * 2) + 1;
-                        const equipChance = Math.random();
-                        if(equipChance > 0.9 && !inventory.helmet) inventory.helmet = "Capacete de Combate";
-                        else if(equipChance > 0.8 && !inventory.vest) inventory.vest = "Colete Tático";
-                        updateUI();
-                        updateMessage("Baú aberto! Itens adicionados ao inventário.");
+                }
+            }
+            
+            // Coleta de itens próximos
+            for (let i = items.length - 1; i >= 0; i--) {
+                if (camera.position.distanceTo(items[i].position) < 2) {
+                    const type = items[i].userData.type;
+                    environmentGroup.remove(items[i]);
+                    items.splice(i, 1);
+                    
+                    switch(type) {
+                        case 'shotgun': unlockWeapon(2); equipWeapon(2); updateMessage("🔫 Escopeta equipada!"); break;
+                        case 'laser_rifle': unlockWeapon(3); equipWeapon(3); updateMessage("🔫 Rifle Laser!"); break;
+                        case 'plasma_rifle': unlockWeapon(4); equipWeapon(4); updateMessage("🔫 Rifle Plasma!"); break;
+                        case 'minigun': unlockWeapon(5); equipWeapon(5); updateMessage("🔫 Metralhadora!"); break;
+                        case 'ammo_pack': 
+                            Object.keys(ammo).forEach(k => { if(k !== 'pistol') ammo[k] += 10; });
+                            updateMessage("📦 +10 munição!");
+                            break;
+                        case 'helmet': inventory.helmet = "Capacete Tático"; updateMessage("⛑️ Capacete +15 defesa"); break;
+                        case 'vest': inventory.vest = "Colete Blindado"; updateMessage("🦺 Colete +25 defesa"); break;
+                        case 'backpack': inventory.backpack = "Mochila Militar"; updateMessage("🎒 Mochila equipada"); break;
+                        case 'boots': inventory.boots = "Botas Reforçadas"; updateMessage("👢 Botas +10 defesa"); break;
+                        case 'glove': inventory.glove = "Luva Tática"; updateMessage("🧤 Luva +10 defesa"); break;
+                        default: 
+                            inventory[type] = (inventory[type] || 0) + 1;
+                            updateMessage(`📦 ${type.toUpperCase()} coletado!`);
                     }
+                    
+                    updateUI();
+                    break;
                 }
             }
         }
 
+        // =========================================
+        // LOOP PRINCIPAL OTIMIZADO
+        // =========================================
+        let lastTime = performance.now();
+        
         function animate() {
             requestAnimationFrame(animate);
-            const time = performance.now();
+            
+            const currentTime = performance.now();
+            const deltaTime = Math.min((currentTime - lastTime) / 1000, 0.1);
+            lastTime = currentTime;
 
-            if (controls.isLocked) {
-                const delta = (time - prevTime) / 1000;
-                const clampedDelta = Math.min(delta, 0.1);
-
-                // Movimento com limites do mapa
-                if (moveF || moveB || moveL || moveR) {
-                    let speed = 8.0;
-                    if(inventory.boots) speed *= 1.1;
-                    if(inventory.backpack) speed *= 1.05;
-                    
-                    if (moveF) controls.moveForward(speed * clampedDelta);
-                    if (moveB) controls.moveForward(-speed * clampedDelta);
-                    if (moveL) controls.moveRight(-speed * clampedDelta);
-                    if (moveR) controls.moveRight(speed * clampedDelta);
-                    
-                    // Limitar posição
-                    camera.position.x = Math.max(-MAP_BOUNDARY, Math.min(MAP_BOUNDARY, camera.position.x));
-                    camera.position.z = Math.max(-MAP_BOUNDARY, Math.min(MAP_BOUNDARY, camera.position.z));
-                    camera.position.y = 1.6; // Altura fixa dos olhos
+            if (controls.isLocked && !isInventoryOpen) {
+                // Movimento suave
+                const speed = 7.0 * (inventory.backpack ? 1.1 : 1) * (inventory.boots ? 1.1 : 1);
+                
+                if (keys.w) controls.moveForward(speed * deltaTime);
+                if (keys.s) controls.moveForward(-speed * deltaTime);
+                if (keys.a) controls.moveRight(-speed * deltaTime);
+                if (keys.d) controls.moveRight(speed * deltaTime);
+                
+                // Limitar posição
+                camera.position.x = Math.max(-70, Math.min(70, camera.position.x));
+                camera.position.z = Math.max(-70, Math.min(70, camera.position.z));
+                camera.position.y = 1.6;
+                
+                // Animação da metralhadora
+                if (currentWeapon === 5 && minigun.visible && minigun.children[1]) {
+                    minigun.children[1].rotation.z += 0.5 * deltaTime * 60;
                 }
-
-                if (currentWeapon === 5 && minigun.visible) {
-                    const barrelsGroup = minigun.children[1];
-                    if (barrelsGroup) barrelsGroup.rotation.z += 0.3;
-                }
-
-                // Coleta de itens
+                
+                // Atualizar itens (rotação)
+                items.forEach(item => {
+                    item.rotation.y += 1.5 * deltaTime;
+                });
+                
+                // Atualizar mobs
                 const playerPos = camera.position;
-                for (let i = items.length - 1; i >= 0; i--) {
-                    const item = items[i];
-                    item.rotation.y += 0.02;
-                    if (playerPos.distanceTo(item.position) < 2.0) {
-                        environmentGroup.remove(item);
-                        const type = item.userData.type;
-                        if (type === 'shotgun') { unlockWeapon(2); equipWeapon(2); updateMessage("Escopeta equipada!"); }
-                        else if (type === 'laser_rifle') { unlockWeapon(3); equipWeapon(3); updateMessage("Rifle Laser equipado!"); }
-                        else if (type === 'plasma_rifle') { unlockWeapon(4); equipWeapon(4); updateMessage("Rifle Plasma equipado!"); }
-                        else if (type === 'minigun') { unlockWeapon(5); equipWeapon(5); updateMessage("Metralhadora equipada!"); }
-                        else if (type === 'ammo_pack') {
-                            Object.keys(ammo).forEach(key => { if(key !== 'pistol') ammo[key] += 10; });
-                            updateMessage("Pacote de munição coletado! +10 munição");
-                        }
-                        else if (type === 'helmet') { inventory.helmet = "Capacete de Combate"; updateMessage("Capacete equipado! +10 defesa"); }
-                        else if (type === 'vest') { inventory.vest = "Colete Tático"; updateMessage("Colete equipado! +20 defesa"); }
-                        else if (type === 'backpack') { inventory.backpack = "Mochila Militar"; updateMessage("Mochila equipada! +5% velocidade"); }
-                        else if (type === 'boots') { inventory.boots = "Botas Táticas"; updateMessage("Botas equipadas! +10% velocidade"); }
-                        else if (type === 'glove') { inventory.glove = "Luva de Combate"; updateMessage("Luva equipada! +5 defesa"); }
-                        else { inventory[type]++; updateMessage(`Coletado: ${type.toUpperCase()}`); }
-                        items.splice(i, 1);
-                        updateUI();
-                    }
-                }
-
-                // Mobs
                 mobs.forEach(mob => {
                     const dist = playerPos.distanceTo(mob.position);
                     const mobData = mob.userData;
-                    if(dist < 25 && dist > 1.2) {
-                        const mobSpeed = mobData.speed;
-                        const dir = new THREE.Vector3().subVectors(playerPos, mob.position).normalize();
-                        mob.position.x += dir.x * mobSpeed;
-                        mob.position.z += dir.z * mobSpeed;
-                        mob.lookAt(playerPos.x, 0, playerPos.z);
-                    }
-                    mob.position.y = Math.sin(time * 0.005 + mob.position.x) * 0.05;
                     
-                    if(dist <= 1.5 && time - lastDamageTime > 1000) {
-                        let damage = 15;
-                        if(mobData.type === 'strong') damage = 25;
-                        if(mobData.type === 'boss') damage = 40;
-                        if(mobData.type === 'fast') damage = 10;
-                        const reducedDamage = Math.max(1, damage - (playerArmor * 0.5));
+                    if(dist < 30 && dist > 1.5) {
+                        const dir = new THREE.Vector3()
+                            .subVectors(playerPos, mob.position)
+                            .normalize();
+                        mob.position.x += dir.x * mobData.speed;
+                        mob.position.z += dir.z * mobData.speed;
+                        mob.lookAt(playerPos.x, mob.position.y, playerPos.z);
+                    }
+                    
+                    // Dano do mob
+                    if(dist <= 1.8 && currentTime - lastDamageTime > 800) {
+                        let damage = 10;
+                        if(mobData.type === 'strong') damage = 20;
+                        if(mobData.type === 'boss') damage = 35;
+                        if(mobData.type === 'fast') damage = 8;
+                        
+                        const reducedDamage = Math.max(1, damage - (playerArmor * 0.3));
                         playerHP -= reducedDamage;
-                        lastDamageTime = time;
+                        lastDamageTime = currentTime;
+                        
                         updateUI();
-                        document.getElementById('damage-screen').style.opacity = '1';
-                        setTimeout(() => document.getElementById('damage-screen').style.opacity = '0', 200);
+                        
+                        // Efeito de dano
+                        const damageScreen = document.getElementById('damage-screen');
+                        damageScreen.style.opacity = '0.6';
+                        setTimeout(() => { damageScreen.style.opacity = '0'; }, 150);
+                        
                         if(playerHP <= 0) {
-                            alert("Você morreu! Recarregue a página para reiniciar.");
-                            document.location.reload();
+                            alert("💀 Você morreu! Recarregue a página para tentar novamente.");
+                            location.reload();
                         }
                     }
                 });
@@ -957,6 +1144,8 @@
             renderer.render(scene, camera);
         }
 
+        // Iniciar
+        updateUI();
         animate();
 
         window.addEventListener('resize', () => {
