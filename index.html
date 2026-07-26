@@ -3,58 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Superman: Resgate na Metrópolis</title>
+    <title>Mini Dead Cells - HTML5</title>
     <style>
         body {
             margin: 0;
             padding: 0;
-            background: #111;
+            background: #0b0b0f;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            font-family: Arial, sans-serif;
-            color: white;
+            font-family: 'Courier New', Courier, monospace;
+            color: #fff;
             overflow: hidden;
         }
         canvas {
-            background: linear-gradient(to bottom, #0b1d3a, #1f4068);
-            box-shadow: 0 0 20px rgba(0, 150, 255, 0.5);
-            display: block;
+            background: linear-gradient(to bottom, #111118, #050508);
+            box-shadow: 0 0 30px rgba(255, 0, 85, 0.2);
+            border: 2px solid #222233;
         }
     </style>
 </head>
 <body>
 
-    <canvas id="gameCanvas" width="400" height="600"></canvas>
+<canvas id="gameCanvas" width="800" height="450"></canvas>
 
 <script>
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
-    // Variáveis do Jogo
-    let score = 0;
-    let lives = 3;
+    // Estados do Jogo
     let gameState = "start"; // start, playing, gameover
+    let score = 0;
+    let wave = 1;
+    let enemiesDefeated = 0;
 
-    // Posição e tamanho do Superman
-    const superman = {
-        x: 175,
-        y: 520,
-        width: 50,
-        height: 50,
-        speed: 7,
-        dx: 0
-    };
-
-    // Listas de itens (Cidadãos para salvar e Meteoros)
-    let citizens = [];
-    let kryptonite = [];
-
-    // Controles do Teclado
+    // Controles
     let keys = {};
-
-    window.addEventListener("keydown", (e) => {
+    window.addEventListener("keydown", e => {
         keys[e.code] = true;
         if (gameState === "start" && e.code === "Space") {
             resetGame();
@@ -64,182 +50,318 @@
             resetGame();
             gameState = "playing";
         }
+        // Pulo
+        if (gameState === "playing" && (e.code === "KeyW" || e.code === "ArrowUp")) {
+            if (player.jumpCount < 2) {
+                player.vy = -11;
+                player.jumpCount++;
+            }
+        }
+        // Esquiva / Roll
+        if (gameState === "playing" && e.code === "Space" && !player.isRolling) {
+            player.isRolling = true;
+            player.rollTimer = 15; // Duração do dash
+            player.vx = player.facing === "right" ? 12 : -12;
+        }
+        // Ataque
+        if (gameState === "playing" && (e.code === "KeyJ" || e.code === "KeyX")) {
+            if (!player.isAttacking) {
+                player.isAttacking = true;
+                player.attackTimer = 12;
+            }
+        }
     });
 
-    window.addEventListener("keyup", (e) => {
+    window.addEventListener("keyup", e => {
         keys[e.code] = false;
     });
 
+    // Jogador (Estilo Prisioneiro do Dead Cells: Corpo escuro e cabeça de fogo verde/laranja brilhante)
+    let player = {
+        x: 100,
+        y: 320,
+        width: 32,
+        height: 48,
+        vx: 0,
+        vy: 0,
+        speed: 4,
+        gravity: 0.6,
+        hp: 100,
+        maxHp: 100,
+        facing: "right",
+        jumpCount: 0,
+        isRolling: false,
+        rollTimer: 0,
+        isAttacking: false,
+        attackTimer: 0
+    };
+
+    let enemies = [];
+    let particles = [];
+
     function resetGame() {
+        player.hp = 100;
+        player.x = 100;
+        player.y = 320;
+        player.vx = 0;
+        player.vy = 0;
+        enemies = [];
+        particles = [];
         score = 0;
-        lives = 3;
-        citizens = [];
-        kryptonite = [];
-        superman.x = 175;
+        wave = 1;
+        enemiesDefeated = 0;
+        spawnEnemy();
+        spawnEnemy();
     }
 
-    // Criar Cidadãos e Meteoros periodicamente
-    function spawnItems() {
-        if (gameState !== "playing") return;
-
-        // Cidadãos caindo
-        if (Math.random() < 0.03) {
-            citizens.push({
-                x: Math.random() * (canvas.width - 30),
-                y: -30,
-                size: 25,
-                speed: 3 + Math.random() * 2
-            });
-        }
-
-        // Kryptonita (Obstáculo)
-        if (Math.random() < 0.02) {
-            kryptonite.push({
-                x: Math.random() * (canvas.width - 30),
-                y: -30,
-                size: 25,
-                speed: 4 + Math.random() * 2
-            });
-        }
+    function spawnEnemy() {
+        let side = Math.random() < 0.5 ? -40 : canvas.width + 40;
+        enemies.push({
+            x: side,
+            y: 320,
+            width: 32,
+            height: 48,
+            speed: 1.5 + wave * 0.3,
+            hp: 2,
+            maxHp: 2,
+            attackCooldown: 0
+        });
     }
 
     function update() {
         if (gameState !== "playing") return;
 
-        // Movimento do Superman
-        if (keys["ArrowLeft"] || keys["KeyA"]) {
-            superman.x -= superman.speed;
+        // Movimento horizontal
+        if (!player.isRolling) {
+            player.vx = 0;
+            if (keys["KeyA"] || keys["ArrowLeft"]) {
+                player.vx = -player.speed;
+                player.facing = "left";
+            }
+            if (keys["KeyD"] || keys["ArrowRight"]) {
+                player.vx = player.speed;
+                player.facing = "right";
+            }
+        } else {
+            // Durante a rolagem, mantém a velocidade do dash e reduz
+            player.rollTimer--;
+            if (player.rollTimer <= 0) {
+                player.isRolling = false;
+            }
         }
-        if (keys["ArrowRight"] || keys["KeyD"]) {
-            superman.x += superman.speed;
+
+        // Gravidade e Posição Y
+        player.vy += player.gravity;
+        player.x += player.vx;
+        player.y += player.vy;
+
+        // Chão do cenário
+        const floorY = 320;
+        if (player.y > floorY) {
+            player.y = floorY;
+            player.vy = 0;
+            player.jumpCount = 0;
         }
 
         // Limites da tela
-        if (superman.x < 0) superman.x = 0;
-        if (superman.x + superman.width > canvas.width) {
-            superman.x = canvas.width - superman.width;
-        }
+        if (player.x < 0) player.x = 0;
+        if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
 
-        // Atualizar Cidadãos
-        for (let i = citizens.length - 1; i >= 0; i--) {
-            citizens[i].y += citizens[i].speed;
-
-            // Colisão com o Superman (Salvar)
-            if (
-                superman.x < citizens[i].x + citizens[i].size &&
-                superman.x + superman.width > citizens[i].x &&
-                superman.y < citizens[i].y + citizens[i].size &&
-                superman.y + superman.height > citizens[i].y
-            ) {
-                score += 10;
-                citizens.splice(i, 1);
-                continue;
-            }
-
-            // Se cair no chão (Perde vida)
-            if (citizens[i].y > canvas.height) {
-                citizens.splice(i, 1);
-                lives--;
-                if (lives <= 0) {
-                    gameState = "gameover";
-                }
+        // Timer de ataque
+        if (player.isAttacking) {
+            player.attackTimer--;
+            if (player.attackTimer <= 0) {
+                player.isAttacking = false;
             }
         }
 
-        // Atualizar Kryptonita
-        for (let i = kryptonite.length - 1; i >= 0; i--) {
-            kryptonite[i].y += kryptonite[i].speed;
+        // Atualizar Inimigos
+        for (let i = enemies.length - 1; i >= 0; i--) {
+            let e = enemies[i];
 
-            // Colisão com o Superman (Dano)
+            // IA Simples: Perseguir o jogador
+            if (e.x < player.x) e.x += e.speed;
+            if (e.x > player.x) e.x -= e.speed;
+
+            // Dano de contato no jogador (se o jogador não estiver rolando)
             if (
-                superman.x < kryptonite[i].x + kryptonite[i].size &&
-                superman.x + superman.width > kryptonite[i].x &&
-                superman.y < kryptonite[i].y + kryptonite[i].size &&
-                superman.y + superman.height > kryptonite[i].y
+                !player.isRolling &&
+                player.x < e.x + e.width &&
+                player.x + player.width > e.x &&
+                player.y < e.y + e.height &&
+                player.y + player.height > e.y
             ) {
-                kryptonite.splice(i, 1);
-                lives--;
-                if (lives <= 0) {
+                player.hp -= 0.8;
+                if (player.hp <= 0) {
                     gameState = "gameover";
                 }
-                continue;
             }
 
-            // Remover se passar da tela
-            if (kryptonite[i].y > canvas.height) {
-                kryptonite.splice(i, 1);
+            // Checar se o jogador atacou o inimigo
+            if (player.isAttacking) {
+                let hitBoxX = player.facing === "right" ? player.x + player.width : player.x - 40;
+                let hitBoxWidth = 40;
+                let hitBoxY = player.y;
+                let hitBoxHeight = player.height;
+
+                if (
+                    hitBoxX < e.x + e.width &&
+                    hitBoxX + hitBoxWidth > e.x &&
+                    hitBoxY < e.y + e.height &&
+                    hitBoxY + hitBoxHeight > e.y
+                ) {
+                    e.hp--;
+                    // Pequeno empurrão para trás ao tomar hit
+                    e.x += player.facing === "right" ? 25 : -25;
+
+                    // Criar partículas de sangue/fagulhas pixeladas
+                    for (let p = 0; p < 5; p++) {
+                        particles.push({
+                            x: e.x + e.width/2,
+                            y: e.y + e.height/2,
+                            vx: (Math.random() - 0.5) * 6,
+                            vy: (Math.random() - 0.5) * 6,
+                            life: 20,
+                            color: "#ff0055"
+                        });
+                    }
+
+                    // Evitar múltiplos hits instantâneos no mesmo frame usando cooldown simples no ataque
+                    player.isAttacking = false; 
+                }
+            }
+
+            // Remover inimigo morto
+            if (e.hp <= 0) {
+                enemies.splice(i, 1);
+                score += 100;
+                enemiesDefeated++;
+
+                // Aumentar dificuldade / ondas
+                if (enemiesDefeated % 5 === 0) {
+                    wave++;
+                }
+
+                // Nascer novos inimigos para manter o ritmo frenético
+                spawnEnemy();
+                if (wave > 1) spawnEnemy();
+            }
+        }
+
+        // Atualizar Partículas
+        for (let i = particles.length - 1; i >= 0; i--) {
+            let pt = particles[i];
+            pt.x += pt.vx;
+            pt.y += pt.vy;
+            pt.life--;
+            if (pt.life <= 0) {
+                particles.splice(i, 1);
             }
         }
     }
 
     function draw() {
-        // Limpar tela
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         if (gameState === "start") {
-            ctx.fillStyle = "white";
-            ctx.font = "24px Arial";
+            ctx.fillStyle = "#ff0055";
+            ctx.font = "bold 32px Courier New";
             ctx.textAlign = "center";
-            ctx.fillText("SUPERMAN: RESGATE", canvas.width / 2, canvas.height / 2 - 40);
-            ctx.font = "14px Arial";
-            ctx.fillText("Use as setas ← → para mover", canvas.width / 2, canvas.height / 2);
-            ctx.fillText("Salve os civis e desvie da Kryptonita!", canvas.width / 2, canvas.height / 2 + 30);
+            ctx.fillText("DEAD CELLS: MINI", canvas.width / 2, canvas.height / 2 - 40);
+            ctx.fillStyle = "#a1a1c1";
+            ctx.font = "14px Courier New";
+            ctx.fillText("A/D para mover | W para Pular (Duplo) | ESPAÇO para Esquivar", canvas.width / 2, canvas.height / 2);
+            ctx.fillText("J ou X para Atacar com a Espada", canvas.width / 2, canvas.height / 2 + 25);
             ctx.fillStyle = "#00ffcc";
-            ctx.fillText("Pressione ESPAÇO para Começar", canvas.width / 2, canvas.height / 2 + 80);
+            ctx.fillText("Pressione ESPAÇO para Começar a Carnificina", canvas.width / 2, canvas.height / 2 + 75);
             return;
         }
 
         if (gameState === "gameover") {
-            ctx.fillStyle = "red";
-            ctx.font = "28px Arial";
+            ctx.fillStyle = "#ff0055";
+            ctx.font = "bold 32px Courier New";
             ctx.textAlign = "center";
-            ctx.fillText("FIM DE JOGO", canvas.width / 2, canvas.height / 2 - 30);
-            ctx.fillStyle = "white";
-            ctx.font = "16px Arial";
-            ctx.fillText("Pontuação Final: " + score, canvas.width / 2, canvas.height / 2 + 10);
-            ctx.fillText("Pressione ESPAÇO para Reiniciar", canvas.width / 2, canvas.height / 2 + 50);
+            ctx.fillText("VOCÊ MORREU", canvas.width / 2, canvas.height / 2 - 40);
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "16px Courier New";
+            ctx.fillText("Pontuação Final: " + score, canvas.width / 2, canvas.height / 2);
+            ctx.fillText("Ondas Sobrevividas: " + (wave - 1), canvas.width / 2, canvas.height / 2 + 25);
+            ctx.fillStyle = "#00ffcc";
+            ctx.fillText("Pressione ESPAÇO para Renascer", canvas.width / 2, canvas.height / 2 + 75);
             return;
         }
 
-        // Desenhar Superman (Representado por um bloco estilizado azul e vermelho)
-        ctx.fillStyle = "#0044cc"; // Roupa Azul
-        ctx.fillRect(superman.x, superman.y, superman.width, superman.height);
-        ctx.fillStyle = "#ffcc00"; // Detalhe amarelo (Cinto)
-        ctx.fillRect(superman.x + 10, superman.y + 30, 30, 5);
-        ctx.fillStyle = "#ff0000"; // Capa vermelha
-        ctx.fillRect(superman.x + 15, superman.y - 10, 20, 15);
+        // Desenhar Cenário (Fundo gótico/masmorra simples)
+        ctx.fillStyle = "#161622";
+        ctx.fillRect(0, 368, canvas.width, 82); // Chão
+        ctx.fillStyle = "#ff0055";
+        ctx.fillRect(0, 365, canvas.width, 3); // Linha neon de destaque no chão
 
-        // Desenhar Cidadãos (Círculos Azuis Claros)
-        ctx.fillStyle = "#00ffcc";
-        for (let c of citizens) {
-            ctx.beginPath();
-            ctx.arc(c.x + c.size/2, c.y + c.size/2, c.size/2, 0, Math.PI * 2);
-            ctx.fill();
+        // Desenhar Partículas
+        for (let pt of particles) {
+            ctx.fillStyle = pt.color;
+            ctx.fillRect(pt.x, pt.y, 3, 3);
         }
 
-        // Desenhar Kryptonita (Círculos Verdes)
-        ctx.fillStyle = "#00ff00";
-        for (let k of kryptonite) {
-            ctx.beginPath();
-            ctx.arc(k.x + k.size/2, k.y + k.size/2, k.size/2, 0, Math.PI * 2);
-            ctx.fill();
+        // Desenhar Inimigos (Zumbis/Infectados estéticos em tons de roxo/verde tóxico)
+        for (let e of enemies) {
+            ctx.fillStyle = "#4a0e4e"; // Corpo
+            ctx.fillRect(e.x, e.y, e.width, e.height);
+            ctx.fillStyle = "#00ff66"; // Olhos brilhantes infectados
+            let eyeX = e.x + 8;
+            ctx.fillRect(eyeX, e.y + 10, 6, 4);
         }
 
-        // Placar e Vidas
-        ctx.fillStyle = "white";
-        ctx.font = "16px Arial";
-        ctx.textAlign = "left";
-        ctx.fillText("Pontos: " + score, 20, 30);
-        ctx.fillText("Vidas: " + lives, 20, 55);
+        // Desenhar Jogador (Prisioneiro: capa marrom escura e cabeça de fogo verde neon)
+        // Corpo e Capa
+        ctx.fillStyle = "#2a1a12"; 
+        ctx.fillRect(player.x, player.y + 12, player.width, player.height - 12);
+        
+        // Cabeça com Fogo Verde Neon clássico do Dead Cells
+        ctx.fillStyle = "#00ffaa";
+        ctx.fillRect(player.x + (player.facing === "right" ? 14 : 6), player.y, 14, 14);
+        // Efeito de labareda superior
+        ctx.fillRect(player.x + (player.facing === "right" ? 18 : 10), player.y - 6, 6, 8);
+
+        // Desenhar Espada se estiver atacando (Efeito de corte estético arco/linha rápida)
+        if (player.isAttacking) {
+            ctx.strokeStyle = "#00ffff";
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            let slashX = player.facing === "right" ? player.x + player.width : player.x - 20;
+            ctx.arc(slashX + 10, player.y + 24, 25, player.facing === "right" ? -Math.PI/2 : Math.PI/2, player.facing === "right" ? Math.PI/2 : 3*Math.PI/2);
+            ctx.stroke();
+        }
+
+        // Interface do Usuário (HUD estilo metroidvania/roguelike)
+        ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+        ctx.fillRect(15, 15, 220, 60);
+        ctx.strokeStyle = "#333344";
+        ctx.strokeRect(15, 15, 220, 60);
+
+        // Barra de Vida
+        ctx.fillStyle = "#331122";
+        ctx.fillRect(25, 25, 200, 16);
+        ctx.fillStyle = "#ff0055";
+        ctx.fillRect(25, 25, (player.hp / player.maxHp) * 200, 16);
+        ctx.fillStyle = "#fff";
+        ctx.font = "10px Courier New";
+        ctx.fillText("HP: " + Math.max(0, Math.floor(player.hp)) + "/" + player.maxHp, 30, 37);
+
+        // Texto de Pontuação e Onda
+        ctx.fillStyle = "#fff";
+        ctx.font = "12px Courier New";
+        ctx.fillText("Pontos: " + score, 25, 60);
+        ctx.fillText("Onda: " + wave, 150, 60);
     }
 
     function loop() {
-        spawnItems();
         update();
         draw();
         requestAnimationFrame(loop);
     }
 
+    // Inicializa o primeiro loop gráfico (tela inicial)
     loop();
 </script>
 
