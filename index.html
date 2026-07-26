@@ -3,697 +3,245 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>One Piece: Grand Line Odyssey</title>
+    <title>Superman: Resgate na Metrópolis</title>
     <style>
-        :root {
-            --bg-color: #0c1b2a;
-            --panel-bg: #1b263b;
-            --accent-color: #e0a96d;
-            --accent-hover: #f4d35e;
-            --text-color: #f8f9fa;
-            --text-dim: #adb5bd;
-            --danger: #e63946;
-            --success: #2a9d8f;
-            --border: #415a77;
-        }
-
-        * {
-            box-sizing: border-box;
+        body {
             margin: 0;
             padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            min-height: 100vh;
+            background: #111;
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 20px;
-        }
-
-        .game-container {
-            width: 100%;
-            max-width: 800px;
-            background-color: var(--panel-bg);
-            border: 3px solid var(--accent-color);
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-
-        header {
-            background: linear-gradient(135deg, #1d3557, #0b132b);
-            padding: 15px;
-            text-align: center;
-            border-bottom: 2px solid var(--accent-color);
-        }
-
-        header h1 {
-            color: var(--accent-color);
-            font-size: 1.8rem;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-        }
-
-        header p {
-            font-size: 0.9rem;
-            color: var(--text-dim);
-        }
-
-        .screen {
-            padding: 25px;
-            display: none;
-            flex-direction: column;
-            gap: 20px;
-            min-height: 450px;
-        }
-
-        .screen.active {
-            display: flex;
-        }
-
-        /* Tela de Seleção */
-        .character-select-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 10px;
-        }
-
-        .char-card {
-            background-color: #0d1b2a;
-            border: 2px solid var(--border);
-            border-radius: 8px;
-            padding: 15px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .char-card:hover {
-            border-color: var(--accent-color);
-            transform: translateY(-5px);
-            background-color: #132238;
-        }
-
-        .char-card h3 {
-            color: var(--accent-color);
-            margin-bottom: 5px;
-        }
-
-        .char-card p {
-            font-size: 0.85rem;
-            color: var(--text-dim);
-            margin-bottom: 10px;
-        }
-
-        /* Tela de Mapa / Navegação */
-        .island-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 12px;
-        }
-
-        .island-btn {
-            background-color: #0d1b2a;
-            border: 2px solid var(--border);
-            color: var(--text-color);
-            padding: 15px;
-            border-radius: 8px;
-            text-align: left;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .island-btn:hover:not(:disabled) {
-            border-color: var(--accent-color);
-            background-color: #132238;
-        }
-
-        .island-btn:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
-
-        /* Painel de Batalha */
-        .battle-arena {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            background-color: #0d1b2a;
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-        }
-
-        .combatant {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .combatant h4 {
-            color: var(--accent-color);
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 4px;
-        }
-
-        .stat-bar-container {
-            background-color: #2b2d42;
-            border-radius: 4px;
-            height: 14px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .stat-bar {
-            height: 100%;
-            width: 100%;
-            transition: width 0.4s ease;
-        }
-
-        .hp-bar { background-color: var(--danger); }
-        .ep-bar { background-color: var(--accent-hover); }
-
-        .stat-text {
-            font-size: 0.75rem;
-            color: var(--text-dim);
-        }
-
-        .battle-log {
-            background-color: #080f18;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 12px;
-            height: 120px;
-            overflow-y: auto;
-            font-size: 0.9rem;
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        .battle-log p {
-            border-left: 3px solid var(--accent-color);
-            padding-left: 8px;
-        }
-
-        .battle-actions {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-        }
-
-        /* Botões Gerais */
-        .btn {
-            background-color: var(--accent-color);
-            color: #0c1b2a;
-            border: none;
-            padding: 12px;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background 0.2s;
-            text-transform: uppercase;
-            font-size: 0.85rem;
-        }
-
-        .btn:hover {
-            background-color: var(--accent-hover);
-        }
-
-        .btn-danger {
-            background-color: var(--danger);
+            height: 100vh;
+            font-family: Arial, sans-serif;
             color: white;
+            overflow: hidden;
         }
-        .btn-danger:hover {
-            background-color: #c1121f;
-        }
-
-        /* Status do Jogador no Topo do Jogo */
-        .player-status-bar {
-            display: flex;
-            justify-content: space-between;
-            background-color: #0d1b2a;
-            padding: 10px 15px;
-            border-bottom: 1px solid var(--border);
-            font-size: 0.9rem;
-        }
-
-        .highlight {
-            color: var(--accent-hover);
-            font-weight: bold;
+        canvas {
+            background: linear-gradient(to bottom, #0b1d3a, #1f4068);
+            box-shadow: 0 0 20px rgba(0, 150, 255, 0.5);
+            display: block;
         }
     </style>
 </head>
 <body>
 
-    <div class="game-container">
-        <header>
-            <h1>One Piece: Grand Line Odyssey</h1>
-            <p>Torne-se o Rei dos Piratas!</p>
-        </header>
+    <canvas id="gameCanvas" width="400" height="600"></canvas>
 
-        <!-- Barra de Status Global (Aparece após escolher o personagem) -->
-        <div id="global-status" class="player-status-bar" style="display: none;">
-            <div>Pirata: <span id="stat-name" class="highlight">-</span></div>
-            <div>Berries: <span id="stat-berries" class="highlight">0 ฿</span></div>
-            <div>Recompensa: <span id="stat-bounty" class="highlight">0 ฿</span></div>
-            <div>Carne (Itens): <span id="stat-meat" class="highlight">2</span></div>
-        </div>
+<script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
 
-        <!-- TELA 1: Escolha de Personagem -->
-        <div id="screen-char-select" class="screen active">
-            <h2>Escolha Seu Capitão Inicial</h2>
-            <p>Cada pirata possui habilidades únicas para navegar pela Grand Line.</p>
-            <div class="character-select-grid">
-                <div class="char-card" onclick="selectCharacter('Luffy')">
-                    <h3>Monkey D. Luffy</h3>
-                    <p>Usuário de Gomu Gomu no Mi. Alta força e golpes devastadores.</p>
-                    <button class="btn">Escolher Luffy</button>
-                </div>
-                <div class="char-card" onclick="selectCharacter('Zoro')">
-                    <h3>Roronoa Zoro</h3>
-                    <p>Espadachim mestre do Santoryu. Ataques precisos e cortantes.</p>
-                    <button class="btn">Escolher Zoro</button>
-                </div>
-                <div class="char-card" onclick="selectCharacter('Nami')">
-                    <h3>Nami</h3>
-                    <p>Navegadora genial. Usa clima e táticas inteligentes para vencer.</p>
-                    <button class="btn">Escolher Nami</button>
-                </div>
-            </div>
-        </div>
+    // Variáveis do Jogo
+    let score = 0;
+    let lives = 3;
+    let gameState = "start"; // start, playing, gameover
 
-        <!-- TELA 2: Mapa de Ilhas / Navegação -->
-        <div id="screen-map" class="screen">
-            <h2>Mapa de Navegação - Grand Line</h2>
-            <p>Escolha seu próximo destino para velejar:</p>
-            <div class="island-grid" id="island-list">
-                <!-- Preenchido via JavaScript -->
-            </div>
-        </div>
+    // Posição e tamanho do Superman
+    const superman = {
+        x: 175,
+        y: 520,
+        width: 50,
+        height: 50,
+        speed: 7,
+        dx: 0
+    };
 
-        <!-- TELA 3: Batalha por Turnos -->
-        <div id="screen-battle" class="screen">
-            <h2 id="battle-title">Combate Iniciado!</h2>
-            
-            <div class="battle-arena">
-                <!-- Info do Jogador -->
-                <div class="combatant">
-                    <h4 id="ui-player-name">Jogador</h4>
-                    <div>
-                        <div class="stat-text">HP: <span id="ui-player-hp-val">100</span>/<span id="ui-player-maxhp">100</span></div>
-                        <div class="stat-bar-container"><div id="ui-player-hp-bar" class="stat-bar hp-bar" style="width: 100%;"></div></div>
-                    </div>
-                    <div>
-                        <div class="stat-text">Estamina / Haki: <span id="ui-player-ep-val">50</span>/<span id="ui-player-maxep">50</span></div>
-                        <div class="stat-bar-container"><div id="ui-player-ep-bar" class="stat-bar ep-bar" style="width: 100%;"></div></div>
-                    </div>
-                </div>
+    // Listas de itens (Cidadãos para salvar e Meteoros)
+    let citizens = [];
+    let kryptonite = [];
 
-                <!-- Info do Inimigo -->
-                <div class="combatant">
-                    <h4 id="ui-enemy-name">Inimigo</h4>
-                    <div>
-                        <div class="stat-text">HP: <span id="ui-enemy-hp-val">100</span>/<span id="ui-enemy-maxhp">100</span></div>
-                        <div class="stat-bar-container"><div id="ui-enemy-hp-bar" class="stat-bar hp-bar" style="width: 100%;"></div></div>
-                    </div>
-                </div>
-            </div>
+    // Controles do Teclado
+    let keys = {};
 
-            <!-- Log de Batalha -->
-            <div class="battle-log" id="battle-log">
-                <p>A batalha vai começar! Prepare suas armas!</p>
-            </div>
-
-            <!-- Ações -->
-            <div class="battle-actions" id="battle-actions-container">
-                <button class="btn" onclick="playerAttack()">Ataque Padrão</button>
-                <button class="btn" onclick="playerSpecial()" id="btn-special">Habilidade Especial</button>
-                <button class="btn" onclick="useMeat()">Comer Carne (Cura)</button>
-                <button class="btn btn-danger" onclick="tryFlee()">Fugir</button>
-            </div>
-        </div>
-
-        <!-- TELA 4: Vitória ou Fim de Jogo -->
-        <div id="screen-result" class="screen" style="text-align: center; justify-content: center;">
-            <h2 id="result-title" style="color: var(--accent-color); font-size: 2.2rem;">Fim da Aventura</h2>
-            <p id="result-desc" style="font-size: 1.1rem; margin: 15px 0;">Resumo da sua jornada.</p>
-            <button class="btn" onclick="returnToMap()" id="result-btn" style="max-width: 250px; margin: 0 auto;">Continuar Navegando</button>
-        </div>
-    </div>
-
-    <script>
-        // Dados do Jogador
-        let player = {
-            name: "",
-            maxHp: 120,
-            hp: 120,
-            maxEp: 60,
-            ep: 60,
-            atk: 18,
-            specialName: "",
-            specialCost: 20,
-            specialMult: 2.2,
-            berries: 0,
-            bounty: 0,
-            meat: 3
-        };
-
-        // Estado do Jogo
-        let currentIslandIndex = 0;
-        let currentEnemy = null;
-        let isPlayerTurn = true;
-
-        // Lista de Ilhas e Inimigos
-        const islands = [
-            {
-                id: 0,
-                name: "1. Vila Dawn / Mar do East Blue",
-                desc: "O ponto de partida da sua jornada pirata.",
-                enemy: { name: "Capanga da Marinha", hp: 70, maxHp: 70, atk: 12, rewardBerries: 50000, rewardBounty: 100000 }
-            },
-            {
-                id: 1,
-                name: "2. Vila Orange (Invasão do Buggy)",
-                desc: "Piratas barulhentos estão aterrorizando a cidade portuária.",
-                enemy: { name: "Pirata dos Piratas do Buggy", hp: 110, maxHp: 110, atk: 16, rewardBerries: 120000, rewardBounty: 300000 }
-            },
-            {
-                id: 2,
-                name: "3. Grand Line - Ilha de Whiskey Peak",
-                desc: "Um refúgio aparentemente amigável de caçadores de recompensa.",
-                enemy: { name: "Agente da Baroque Works", hp: 160, maxHp: 160, atk: 22, rewardBerries: 250000, rewardBounty: 750000 }
-            },
-            {
-                id: 3,
-                name: "4. Arquipélago Sabaody",
-                desc: "Ilhas de árvores gigantes perto da Red Line. A Marinha patrulha o local.",
-                enemy: { name: "Oficial da Marinha (Pacifista Prototype)", hp: 220, maxHp: 220, atk: 28, rewardBerries: 500000, rewardBounty: 1500000 }
-            }
-        ];
-
-        // Funções de Troca de Tela
-        function showScreen(screenId) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(screenId).classList.add('active');
+    window.addEventListener("keydown", (e) => {
+        keys[e.code] = true;
+        if (gameState === "start" && e.code === "Space") {
+            resetGame();
+            gameState = "playing";
         }
-
-        // Seleção de Personagem
-        function selectCharacter(charType) {
-            if (charType === 'Luffy') {
-                player.name = "Monkey D. Luffy";
-                player.maxHp = 130;
-                player.hp = 130;
-                player.maxEp = 50;
-                player.ep = 50;
-                player.atk = 20;
-                player.specialName = "Gomu Gomu no Pistol";
-                player.specialCost = 20;
-                player.specialMult = 2.4;
-            } else if (charType === 'Zoro') {
-                player.name = "Roronoa Zoro";
-                player.maxHp = 140;
-                player.hp = 140;
-                player.maxEp = 40;
-                player.ep = 40;
-                player.atk = 24;
-                player.specialName = "Onigiri (Santoryu)";
-                player.specialCost = 18;
-                player.specialMult = 2.2;
-            } else if (charType === 'Nami') {
-                player.name = "Nami";
-                player.maxHp = 100;
-                player.hp = 100;
-                player.maxEp = 70;
-                player.ep = 70;
-                player.atk = 15;
-                player.specialName = "Thunderbolt Tempo";
-                player.specialCost = 25;
-                player.specialMult = 2.7;
-            }
-
-            // Atualiza UI Global
-            document.getElementById('stat-name').innerText = player.name;
-            document.getElementById('global-status').style.display = 'flex';
-            updateGlobalStatus();
-
-            buildMap();
-            showScreen('screen-map');
+        if (gameState === "gameover" && e.code === "Space") {
+            resetGame();
+            gameState = "playing";
         }
+    });
 
-        function updateGlobalStatus() {
-            document.getElementById('stat-berries').innerText = player.berries.toLocaleString() + " ฿";
-            document.getElementById('stat-bounty').innerText = player.bounty.toLocaleString() + " ฿";
-            document.getElementById('stat-meat').innerText = player.meat;
-            document.getElementById('btn-special').innerText = `${player.specialName} (${player.specialCost} EP)`;
-        }
+    window.addEventListener("keyup", (e) => {
+        keys[e.code] = false;
+    });
 
-        // Construção do Mapa
-        function buildMap() {
-            const listEl = document.getElementById('island-list');
-            listEl.innerHTML = "";
+    function resetGame() {
+        score = 0;
+        lives = 3;
+        citizens = [];
+        kryptonite = [];
+        superman.x = 175;
+    }
 
-            islands.forEach((island, index) => {
-                const btn = document.createElement('button');
-                btn.className = "island-btn";
-                
-                let statusText = index === currentIslandIndex ? "🟢 Destino Atual" : (index < currentIslandIndex ? "✔️ Conquistada" : "🔒 Bloqueada");
-                if (index > currentIslandIndex) btn.disabled = true;
+    // Criar Cidadãos e Meteoros periodicamente
+    function spawnItems() {
+        if (gameState !== "playing") return;
 
-                btn.innerHTML = `
-                    <div>
-                        <strong>${island.name}</strong><br>
-                        <small style="color: var(--text-dim);">${island.desc}</small>
-                    </div>
-                    <div style="font-weight: bold; font-size: 0.85rem;">${statusText}</div>
-                `;
-
-                if (index <= currentIslandIndex) {
-                    btn.onclick = () => startBattle(index);
-                }
-
-                listEl.appendChild(btn);
+        // Cidadãos caindo
+        if (Math.random() < 0.03) {
+            citizens.push({
+                x: Math.random() * (canvas.width - 30),
+                y: -30,
+                size: 25,
+                speed: 3 + Math.random() * 2
             });
         }
 
-        // Início da Batalha
-        function startBattle(islandIdx) {
-            const templateEnemy = islands[islandIdx].enemy;
-            // Cria cópia profunda do inimigo para manipular os dados na luta
-            currentEnemy = {
-                name: templateEnemy.name,
-                hp: templateEnemy.hp,
-                maxHp: templateEnemy.maxHp,
-                atk: templateEnemy.atk,
-                rewardBerries: templateEnemy.rewardBerries,
-                rewardBounty: templateEnemy.rewardBounty
-            };
+        // Kryptonita (Obstáculo)
+        if (Math.random() < 0.02) {
+            kryptonite.push({
+                x: Math.random() * (canvas.width - 30),
+                y: -30,
+                size: 25,
+                speed: 4 + Math.random() * 2
+            });
+        }
+    }
 
-            document.getElementById('battle-title').innerText = `Batalha em: ${islands[islandIdx].name}`;
-            document.getElementById('ui-player-name').innerText = player.name;
-            document.getElementById('ui-enemy-name').innerText = currentEnemy.name;
+    function update() {
+        if (gameState !== "playing") return;
 
-            // Limpa log anterior
-            const log = document.getElementById('battle-log');
-            log.innerHTML = `<p>Encontro hostil! Um(a) <strong>${currentEnemy.name}</strong> apareceu para desafiar sua tripulação!</p>`;
-
-            isPlayerTurn = true;
-            document.getElementById('battle-actions-container').style.pointerEvents = 'auto';
-
-            updateBattleUI();
-            showScreen('screen-battle');
+        // Movimento do Superman
+        if (keys["ArrowLeft"] || keys["KeyA"]) {
+            superman.x -= superman.speed;
+        }
+        if (keys["ArrowRight"] || keys["KeyD"]) {
+            superman.x += superman.speed;
         }
 
-        // Atualização visual do combate
-        function updateBattleUI() {
-            // Jogador HP
-            let pHpPct = (player.hp / player.maxHp) * 100;
-            document.getElementById('ui-player-hp-val').innerText = Math.max(0, player.hp);
-            document.getElementById('ui-player-maxhp').innerText = player.maxHp;
-            document.getElementById('ui-player-hp-bar').style.width = `${Math.max(0, pHpPct)}%`;
-
-            // Jogador EP
-            let pEpPct = (player.ep / player.maxEp) * 100;
-            document.getElementById('ui-player-ep-val').innerText = player.ep;
-            document.getElementById('ui-player-maxep').innerText = player.maxEp;
-            document.getElementById('ui-player-ep-bar').style.width = `${Math.max(0, pEpPct)}%`;
-
-            // Inimigo HP
-            let eHpPct = (currentEnemy.hp / currentEnemy.maxHp) * 100;
-            document.getElementById('ui-enemy-hp-val').innerText = Math.max(0, currentEnemy.hp);
-            document.getElementById('ui-enemy-maxhp').innerText = currentEnemy.maxHp;
-            document.getElementById('ui-enemy-hp-bar').style.width = `${Math.max(0, eHpPct)}%`;
+        // Limites da tela
+        if (superman.x < 0) superman.x = 0;
+        if (superman.x + superman.width > canvas.width) {
+            superman.x = canvas.width - superman.width;
         }
 
-        function logMessage(msg) {
-            const log = document.getElementById('battle-log');
-            const p = document.createElement('p');
-            p.innerHTML = msg;
-            log.appendChild(p);
-            log.scrollTop = log.scrollHeight;
-        }
+        // Atualizar Cidadãos
+        for (let i = citizens.length - 1; i >= 0; i--) {
+            citizens[i].y += citizens[i].speed;
 
-        // Ações de Turno do Jogador
-        function playerAttack() {
-            if (!isPlayerTurn) return;
-
-            let damage = Math.floor(player.atk + (Math.random() * 6 - 3));
-            currentEnemy.hp -= damage;
-            logMessage(`Você atacou com força padrão e causou <strong>${damage}</strong> de dano em ${currentEnemy.name}!`);
-
-            // Regenera um pouco de EP por ataque padrão
-            player.ep = Math.min(player.maxEp, player.ep + 5);
-
-            endPlayerAction();
-        }
-
-        function playerSpecial() {
-            if (!isPlayerTurn) return;
-
-            if (player.ep < player.specialCost) {
-                logMessage(`Estamina insuficiente! Você precisa de ${player.specialCost} de EP.`);
-                return;
+            // Colisão com o Superman (Salvar)
+            if (
+                superman.x < citizens[i].x + citizens[i].size &&
+                superman.x + superman.width > citizens[i].x &&
+                superman.y < citizens[i].y + citizens[i].size &&
+                superman.y + superman.height > citizens[i].y
+            ) {
+                score += 10;
+                citizens.splice(i, 1);
+                continue;
             }
 
-            player.ep -= player.specialCost;
-            let damage = Math.floor((player.atk * player.specialMult) + (Math.random() * 10 - 5));
-            currentEnemy.hp -= damage;
-
-            logMessage(`✨ Você usou <span style="color: var(--accent-hover);">${player.specialName}</span> e causou um dano brutal de <strong>${damage}</strong>!`);
-
-            endPlayerAction();
+            // Se cair no chão (Perde vida)
+            if (citizens[i].y > canvas.height) {
+                citizens.splice(i, 1);
+                lives--;
+                if (lives <= 0) {
+                    gameState = "gameover";
+                }
+            }
         }
 
-        function useMeat() {
-            if (!isPlayerTurn) return;
+        // Atualizar Kryptonita
+        for (let i = kryptonite.length - 1; i >= 0; i--) {
+            kryptonite[i].y += kryptonite[i].speed;
 
-            if (player.meat <= 0) {
-                logMessage(`Você não tem mais porções de carne na despensa do navio!`);
-                return;
+            // Colisão com o Superman (Dano)
+            if (
+                superman.x < kryptonite[i].x + kryptonite[i].size &&
+                superman.x + superman.width > kryptonite[i].x &&
+                superman.y < kryptonite[i].y + kryptonite[i].size &&
+                superman.y + superman.height > kryptonite[i].y
+            ) {
+                kryptonite.splice(i, 1);
+                lives--;
+                if (lives <= 0) {
+                    gameState = "gameover";
+                }
+                continue;
             }
 
-            if (player.hp >= player.maxHp) {
-                logMessage(`Sua vida já está cheia! Guarde a carne para o momento certo.`);
-                return;
+            // Remover se passar da tela
+            if (kryptonite[i].y > canvas.height) {
+                kryptonite.splice(i, 1);
             }
+        }
+    }
 
-            player.meat--;
-            let healAmount = 50;
-            player.hp = Math.min(player.maxHp, player.hp + healAmount);
-            logMessage(`🍖 Você comeu uma carne suculenta e recuperou <strong>${healAmount}</strong> pontos de HP!`);
-            updateGlobalStatus();
+    function draw() {
+        // Limpar tela
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            endPlayerAction();
+        if (gameState === "start") {
+            ctx.fillStyle = "white";
+            ctx.font = "24px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText("SUPERMAN: RESGATE", canvas.width / 2, canvas.height / 2 - 40);
+            ctx.font = "14px Arial";
+            ctx.fillText("Use as setas ← → para mover", canvas.width / 2, canvas.height / 2);
+            ctx.fillText("Salve os civis e desvie da Kryptonita!", canvas.width / 2, canvas.height / 2 + 30);
+            ctx.fillStyle = "#00ffcc";
+            ctx.fillText("Pressione ESPAÇO para Começar", canvas.width / 2, canvas.height / 2 + 80);
+            return;
         }
 
-        function tryFlee() {
-            if (!isPlayerTurn) return;
-
-            logMessage(`Você fugiu covardemente da batalha e retornou ao mapa.`);
-            setTimeout(() => {
-                showScreen('screen-map');
-            }, 1500);
+        if (gameState === "gameover") {
+            ctx.fillStyle = "red";
+            ctx.font = "28px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText("FIM DE JOGO", canvas.width / 2, canvas.height / 2 - 30);
+            ctx.fillStyle = "white";
+            ctx.font = "16px Arial";
+            ctx.fillText("Pontuação Final: " + score, canvas.width / 2, canvas.height / 2 + 10);
+            ctx.fillText("Pressione ESPAÇO para Reiniciar", canvas.width / 2, canvas.height / 2 + 50);
+            return;
         }
 
-        function endPlayerAction() {
-            updateBattleUI();
+        // Desenhar Superman (Representado por um bloco estilizado azul e vermelho)
+        ctx.fillStyle = "#0044cc"; // Roupa Azul
+        ctx.fillRect(superman.x, superman.y, superman.width, superman.height);
+        ctx.fillStyle = "#ffcc00"; // Detalhe amarelo (Cinto)
+        ctx.fillRect(superman.x + 10, superman.y + 30, 30, 5);
+        ctx.fillStyle = "#ff0000"; // Capa vermelha
+        ctx.fillRect(superman.x + 15, superman.y - 10, 20, 15);
 
-            if (currentEnemy.hp <= 0) {
-                handleVictory();
-                return;
-            }
-
-            // Passa a vez para o inimigo
-            isPlayerTurn = false;
-            document.getElementById('battle-actions-container').style.pointerEvents = 'none';
-
-            setTimeout(enemyTurn, 1000);
+        // Desenhar Cidadãos (Círculos Azuis Claros)
+        ctx.fillStyle = "#00ffcc";
+        for (let c of citizens) {
+            ctx.beginPath();
+            ctx.arc(c.x + c.size/2, c.y + c.size/2, c.size/2, 0, Math.PI * 2);
+            ctx.fill();
         }
 
-        // Turno do Inimigo
-        function enemyTurn() {
-            let enemyDamage = Math.floor(currentEnemy.atk + (Math.random() * 6 - 3));
-            player.hp -= enemyDamage;
-            logMessage(`${currentEnemy.name} contra-atacou e causou <strong>${enemyDamage}</strong> de dano em você!`);
-
-            updateBattleUI();
-
-            if (player.hp <= 0) {
-                handleGameOver();
-                return;
-            }
-
-            // Devolve o turno ao jogador
-            isPlayerTurn = true;
-            document.getElementById('battle-actions-container').style.pointerEvents = 'auto';
+        // Desenhar Kryptonita (Círculos Verdes)
+        ctx.fillStyle = "#00ff00";
+        for (let k of kryptonite) {
+            ctx.beginPath();
+            ctx.arc(k.x + k.size/2, k.y + k.size/2, k.size/2, 0, Math.PI * 2);
+            ctx.fill();
         }
 
-        // Fim de Batalha: Vitória
-        function handleVictory() {
-            player.berries += currentEnemy.rewardBerries;
-            player.bounty += currentEnemy.rewardBounty;
+        // Placar e Vidas
+        ctx.fillStyle = "white";
+        ctx.font = "16px Arial";
+        ctx.textAlign = "left";
+        ctx.fillText("Pontos: " + score, 20, 30);
+        ctx.fillText("Vidas: " + lives, 20, 55);
+    }
 
-            // Recompensa bônus de carne ocasional
-            if (Math.random() > 0.5) {
-                player.meat++;
-            }
+    function loop() {
+        spawnItems();
+        update();
+        draw();
+        requestAnimationFrame(loop);
+    }
 
-            updateGlobalStatus();
+    loop();
+</script>
 
-            document.getElementById('result-title').innerText = "Vitória Pirata! 🎉";
-            document.getElementById('result-desc').innerHTML = `
-                Você derrotou ${currentEnemy.name}!<br><br>
-                Recompensas obtidas:<br>
-                💰 <strong>${currentEnemy.rewardBerries.toLocaleString()} Berries</strong><br>
-                📜 Nova Recompensa (Bounty): <strong>${currentEnemy.bounty.toLocaleString()} ฿</strong>
-            `;
-
-            let btn = document.getElementById('result-btn');
-            
-            // Verifica progresso de ilhas
-            if (currentIslandIndex < islands.length - 1) {
-                currentIslandIndex++;
-                btn.innerText = "Avançar para Próxima Ilha";
-                btn.onclick = () => {
-                    buildMap();
-                    showScreen('screen-map');
-                };
-            } else {
-                btn.innerText = "Zerar o Jogo (Rei dos Piratas)";
-                btn.onclick = () => {
-                    alert("Parabéns! Você conquistou a Grand Line e se tornou o Rei dos Piratas!");
-                    location.reload();
-                };
-            }
-
-            showScreen('screen-result');
-        }
-
-        // Fim de Jogo: Derrota
-        function handleGameOver() {
-            document.getElementById('result-title').innerText = "Derrota... 💀";
-            document.getElementById('result-desc').innerHTML = `
-                Sua tripulação foi subjugada por ${currentEnemy.name}.<br>
-                A jornada na Grand Line foi interrompida, mas os sonhos nunca morrem!
-            `;
-            let btn = document.getElementById('result-btn');
-            btn.innerText = "Tentar Novamente";
-            btn.onclick = () => {
-                location.reload();
-            };
-
-            showScreen('screen-result');
-        }
-    </script>
 </body>
 </html>
