@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mini Dead Cells - HTML5</title>
+    <title>Mini Dead Cells - Edição Completa</title>
     <style>
         body {
             margin: 0;
             padding: 0;
-            background: #0b0b0f;
+            background: #050508;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -18,56 +18,93 @@
             overflow: hidden;
         }
         canvas {
-            background: linear-gradient(to bottom, #111118, #050508);
-            box-shadow: 0 0 30px rgba(255, 0, 85, 0.2);
-            border: 2px solid #222233;
+            background: radial-gradient(circle at center, #11111b 0%, #050508 100%);
+            box-shadow: 0 0 40px rgba(0, 255, 170, 0.15);
+            border: 2px solid #22223b;
         }
     </style>
 </head>
 <body>
 
-<canvas id="gameCanvas" width="800" height="450"></canvas>
+<canvas id="gameCanvas" width="900" height="500"></canvas>
 
 <script>
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
     // Estados do Jogo
-    let gameState = "start"; // start, playing, gameover
+    let gameState = "start"; // start, playing, shop, gameover
     let score = 0;
     let wave = 1;
+    let cells = 0;
     let enemiesDefeated = 0;
+    let shopOpen = false;
+
+    // Upgrades do Jogador
+    let upgrades = {
+        maxHpBonus: 0,
+        damageBonus: 0
+    };
 
     // Controles
     let keys = {};
     window.addEventListener("keydown", e => {
         keys[e.code] = true;
+
         if (gameState === "start" && e.code === "Space") {
-            resetGame();
-            gameState = "playing";
+            startGame();
         }
         if (gameState === "gameover" && e.code === "Space") {
-            resetGame();
-            gameState = "playing";
+            startGame();
         }
+
         // Pulo
         if (gameState === "playing" && (e.code === "KeyW" || e.code === "ArrowUp")) {
             if (player.jumpCount < 2) {
-                player.vy = -11;
+                player.vy = -12;
                 player.jumpCount++;
+                createParticles(player.x + player.width/2, player.y + player.height, 5, "#00ffaa");
             }
         }
+
         // Esquiva / Roll
-        if (gameState === "playing" && e.code === "Space" && !player.isRolling) {
+        if (gameState === "playing" && e.code === "Space" && !player.isRolling && player.rollCooldown <= 0) {
             player.isRolling = true;
-            player.rollTimer = 15; // Duração do dash
-            player.vx = player.facing === "right" ? 12 : -12;
+            player.rollTimer = 18;
+            player.rollCooldown = 40;
+            player.vx = player.facing === "right" ? 14 : -14;
+            createParticles(player.x + player.width/2, player.y + player.height/2, 8, "#00ffff");
         }
+
         // Ataque
-        if (gameState === "playing" && (e.code === "KeyJ" || e.code === "KeyX")) {
+        if (gameState === "playing" && e.code === "KeyJ") {
             if (!player.isAttacking) {
                 player.isAttacking = true;
-                player.attackTimer = 12;
+                player.attackTimer = 10;
+            }
+        }
+
+        // Abrir Loja / Próxima Onda
+        if (e.code === "KeyE") {
+            if (gameState === "playing" && enemies.length === 0) {
+                gameState = "shop";
+            } else if (gameState === "shop") {
+                gameState = "playing";
+                nextWave();
+            }
+        }
+
+        // Compras na Loja
+        if (gameState === "shop") {
+            if (e.code === "Digit1" && cells >= 5) {
+                cells -= 5;
+                upgrades.maxHpBonus += 25;
+                player.maxHp += 25;
+                player.hp = player.maxHp;
+            }
+            if (e.code === "Digit2" && cells >= 8) {
+                cells -= 8;
+                upgrades.damageBonus += 1;
             }
         }
     });
@@ -76,60 +113,101 @@
         keys[e.code] = false;
     });
 
-    // Jogador (Estilo Prisioneiro do Dead Cells: Corpo escuro e cabeça de fogo verde/laranja brilhante)
+    // Jogador (Prisioneiro Dead Cells)
     let player = {
         x: 100,
-        y: 320,
+        y: 340,
         width: 32,
         height: 48,
         vx: 0,
         vy: 0,
-        speed: 4,
-        gravity: 0.6,
+        speed: 4.5,
+        gravity: 0.65,
         hp: 100,
         maxHp: 100,
         facing: "right",
         jumpCount: 0,
         isRolling: false,
         rollTimer: 0,
+        rollCooldown: 0,
         isAttacking: false,
         attackTimer: 0
     };
 
     let enemies = [];
     let particles = [];
+    let floatingTexts = [];
 
-    function resetGame() {
+    function startGame() {
+        upgrades.maxHpBonus = 0;
+        upgrades.damageBonus = 0;
+        player.maxHp = 100;
         player.hp = 100;
-        player.x = 100;
-        player.y = 320;
-        player.vx = 0;
-        player.vy = 0;
-        enemies = [];
-        particles = [];
+        cells = 0;
         score = 0;
         wave = 1;
         enemiesDefeated = 0;
-        spawnEnemy();
-        spawnEnemy();
+        enemies = [];
+        particles = [];
+        floatingTexts = [];
+        player.x = 100;
+        player.y = 340;
+        spawnWaveEnemies();
+        gameState = "playing";
     }
 
-    function spawnEnemy() {
-        let side = Math.random() < 0.5 ? -40 : canvas.width + 40;
-        enemies.push({
-            x: side,
-            y: 320,
-            width: 32,
-            height: 48,
-            speed: 1.5 + wave * 0.3,
-            hp: 2,
-            maxHp: 2,
-            attackCooldown: 0
+    function nextWave() {
+        wave++;
+        spawnWaveEnemies();
+    }
+
+    function spawnWaveEnemies() {
+        let count = 2 + wave;
+        for (let i = 0; i < count; i++) {
+            let side = Math.random() < 0.5 ? -60 : canvas.width + 60;
+            let type = Math.random() > 0.7 && wave > 1 ? "brute" : "normal";
+            enemies.push({
+                x: side + (i * 30),
+                y: 340,
+                width: type === "brute" ? 42 : 32,
+                height: type === "brute" ? 54 : 48,
+                speed: type === "brute" ? 1.2 : 2.0 + (wave * 0.1),
+                hp: type === "brute" ? 5 + wave : 2 + Math.floor(wave/2),
+                maxHp: type === "brute" ? 5 + wave : 2 + Math.floor(wave/2),
+                type: type,
+                attackCd: 0
+            });
+        }
+    }
+
+    function createParticles(x, y, count, color) {
+        for (let i = 0; i < count; i++) {
+            particles.push({
+                x: x,
+                y: y,
+                vx: (Math.random() - 0.5) * 8,
+                vy: (Math.random() - 0.5) * 8,
+                life: 25,
+                color: color
+            });
+        }
+    }
+
+    function addFloatingText(text, x, y, color) {
+        floatingTexts.push({
+            text: text,
+            x: x,
+            y: y,
+            vy: -1.5,
+            life: 30,
+            color: color
         });
     }
 
     function update() {
         if (gameState !== "playing") return;
+
+        if (player.rollCooldown > 0) player.rollCooldown--;
 
         // Movimento horizontal
         if (!player.isRolling) {
@@ -143,20 +221,18 @@
                 player.facing = "right";
             }
         } else {
-            // Durante a rolagem, mantém a velocidade do dash e reduz
             player.rollTimer--;
             if (player.rollTimer <= 0) {
                 player.isRolling = false;
             }
         }
 
-        // Gravidade e Posição Y
+        // Física e Gravidade
         player.vy += player.gravity;
         player.x += player.vx;
         player.y += player.vy;
 
-        // Chão do cenário
-        const floorY = 320;
+        const floorY = 340;
         if (player.y > floorY) {
             player.y = floorY;
             player.vy = 0;
@@ -179,11 +255,11 @@
         for (let i = enemies.length - 1; i >= 0; i--) {
             let e = enemies[i];
 
-            // IA Simples: Perseguir o jogador
+            // IA Inimiga
             if (e.x < player.x) e.x += e.speed;
             if (e.x > player.x) e.x -= e.speed;
 
-            // Dano de contato no jogador (se o jogador não estiver rolando)
+            // Dano ao Jogador (se não estiver rolando)
             if (
                 !player.isRolling &&
                 player.x < e.x + e.width &&
@@ -191,16 +267,17 @@
                 player.y < e.y + e.height &&
                 player.y + player.height > e.y
             ) {
-                player.hp -= 0.8;
+                player.hp -= (e.type === "brute" ? 1.5 : 0.8);
+                createParticles(player.x + player.width/2, player.y + player.height/2, 3, "#ff0055");
                 if (player.hp <= 0) {
                     gameState = "gameover";
                 }
             }
 
-            // Checar se o jogador atacou o inimigo
+            // Ataque do Jogador acertando inimigo
             if (player.isAttacking) {
-                let hitBoxX = player.facing === "right" ? player.x + player.width : player.x - 40;
-                let hitBoxWidth = 40;
+                let hitBoxX = player.facing === "right" ? player.x + player.width : player.x - 45;
+                let hitBoxWidth = 45;
                 let hitBoxY = player.y;
                 let hitBoxHeight = player.height;
 
@@ -210,92 +287,111 @@
                     hitBoxY < e.y + e.height &&
                     hitBoxY + hitBoxHeight > e.y
                 ) {
-                    e.hp--;
-                    // Pequeno empurrão para trás ao tomar hit
-                    e.x += player.facing === "right" ? 25 : -25;
-
-                    // Criar partículas de sangue/fagulhas pixeladas
-                    for (let p = 0; p < 5; p++) {
-                        particles.push({
-                            x: e.x + e.width/2,
-                            y: e.y + e.height/2,
-                            vx: (Math.random() - 0.5) * 6,
-                            vy: (Math.random() - 0.5) * 6,
-                            life: 20,
-                            color: "#ff0055"
-                        });
-                    }
-
-                    // Evitar múltiplos hits instantâneos no mesmo frame usando cooldown simples no ataque
-                    player.isAttacking = false; 
+                    let damage = 1 + upgrades.damageBonus;
+                    e.hp -= damage;
+                    e.x += player.facing === "right" ? 30 : -30; // Recuo
+                    createParticles(e.x + e.width/2, e.y + e.height/2, 6, "#ff00aa");
+                    addFloatingText("-" + damage, e.x + e.width/2, e.y - 10, "#00ffff");
+                    player.isAttacking = false; // Evita multi-hit instantâneo por frame
                 }
             }
 
-            // Remover inimigo morto
+            // Inimigo Morto
             if (e.hp <= 0) {
                 enemies.splice(i, 1);
-                score += 100;
+                score += 150;
+                cells += Math.floor(Math.random() * 2) + 1;
                 enemiesDefeated++;
-
-                // Aumentar dificuldade / ondas
-                if (enemiesDefeated % 5 === 0) {
-                    wave++;
-                }
-
-                // Nascer novos inimigos para manter o ritmo frenético
-                spawnEnemy();
-                if (wave > 1) spawnEnemy();
+                createParticles(e.x + e.width/2, e.y + e.height/2, 12, "#00ffcc");
             }
         }
 
-        // Atualizar Partículas
+        // Atualizar Partículas e Textos Flutuantes
         for (let i = particles.length - 1; i >= 0; i--) {
             let pt = particles[i];
             pt.x += pt.vx;
             pt.y += pt.vy;
             pt.life--;
-            if (pt.life <= 0) {
-                particles.splice(i, 1);
-            }
+            if (pt.life <= 0) particles.splice(i, 1);
+        }
+
+        for (let i = floatingTexts.length - 1; i >= 0; i--) {
+            let ft = floatingTexts[i];
+            ft.y += ft.vy;
+            ft.life--;
+            if (ft.life <= 0) floatingTexts.splice(i, 1);
+        }
+
+        // Checar fim de onda
+        if (enemies.length === 0) {
+            // Pequena pausa antes de liberar a loja ou próxima onda
         }
     }
 
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+        // --- TELA INICIAL ---
         if (gameState === "start") {
             ctx.fillStyle = "#ff0055";
-            ctx.font = "bold 32px Courier New";
+            ctx.font = "bold 36px 'Courier New'";
             ctx.textAlign = "center";
-            ctx.fillText("DEAD CELLS: MINI", canvas.width / 2, canvas.height / 2 - 40);
+            ctx.fillText("DEAD CELLS: MINI ED", canvas.width / 2, canvas.height / 2 - 60);
             ctx.fillStyle = "#a1a1c1";
-            ctx.font = "14px Courier New";
-            ctx.fillText("A/D para mover | W para Pular (Duplo) | ESPAÇO para Esquivar", canvas.width / 2, canvas.height / 2);
-            ctx.fillText("J ou X para Atacar com a Espada", canvas.width / 2, canvas.height / 2 + 25);
-            ctx.fillStyle = "#00ffcc";
-            ctx.fillText("Pressione ESPAÇO para Começar a Carnificina", canvas.width / 2, canvas.height / 2 + 75);
+            ctx.font = "14px 'Courier New'";
+            ctx.fillText("A/D: Mover | W: Pular Duplo | ESPAÇO: Esquivar (Invulnerável)", canvas.width / 2, canvas.height / 2 - 15);
+            ctx.fillText("J: Atacar com Espada | E: Abrir Loja entre Ondas", canvas.width / 2, canvas.height / 2 + 15);
+            ctx.fillStyle = "#00ffaa";
+            ctx.font = "bold 16px 'Courier New'";
+            ctx.fillText("Pressione [ ESPAÇO ] para Iniciar", canvas.width / 2, canvas.height / 2 + 75);
             return;
         }
 
+        // --- TELA DE GAME OVER ---
         if (gameState === "gameover") {
             ctx.fillStyle = "#ff0055";
-            ctx.font = "bold 32px Courier New";
+            ctx.font = "bold 36px 'Courier New'";
             ctx.textAlign = "center";
-            ctx.fillText("VOCÊ MORREU", canvas.width / 2, canvas.height / 2 - 40);
+            ctx.fillText("VOCÊ MORREU", canvas.width / 2, canvas.height / 2 - 50);
             ctx.fillStyle = "#ffffff";
-            ctx.font = "16px Courier New";
-            ctx.fillText("Pontuação Final: " + score, canvas.width / 2, canvas.height / 2);
-            ctx.fillText("Ondas Sobrevividas: " + (wave - 1), canvas.width / 2, canvas.height / 2 + 25);
-            ctx.fillStyle = "#00ffcc";
-            ctx.fillText("Pressione ESPAÇO para Renascer", canvas.width / 2, canvas.height / 2 + 75);
+            ctx.font = "16px 'Courier New'";
+            ctx.fillText("Pontuação Final: " + score, canvas.width / 2, canvas.height / 2 - 5);
+            ctx.fillText("Ondas Sobrevividas: " + wave, canvas.width / 2, canvas.height / 2 + 25);
+            ctx.fillStyle = "#00ffaa";
+            ctx.fillText("Pressione [ ESPAÇO ] para Jogar Novamente", canvas.width / 2, canvas.height / 2 + 80);
             return;
         }
 
-        // Desenhar Cenário (Fundo gótico/masmorra simples)
-        ctx.fillStyle = "#161622";
-        ctx.fillRect(0, 368, canvas.width, 82); // Chão
+        // --- TELA DA LOJA / INTERVALO ---
+        if (gameState === "shop") {
+            ctx.fillStyle = "rgba(10, 10, 18, 0.85)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = "#00ffcc";
+            ctx.font = "bold 28px 'Courier New'";
+            ctx.textAlign = "center";
+            ctx.fillText("INTERVALO DA ONDA " + wave + " CONCLUÍDA", canvas.width / 2, 100);
+            
+            ctx.fillStyle = "#fff";
+            ctx.font = "16px 'Courier New'";
+            ctx.fillText("Células Disponíveis: 🟢 " + cells, canvas.width / 2, 150);
+
+            ctx.fillStyle = "#a1a1c1";
+            ctx.fillText("[1] Aumentar Vida Máxima (+25 HP) - Custo: 5 Células", canvas.width / 2, 220);
+            ctx.fillText("[2] Fortalecer Espada (+1 Dano) - Custo: 8 Células", canvas.width / 2, 260);
+
+            ctx.fillStyle = "#00ffaa";
+            ctx.font = "bold 16px 'Courier New'";
+            ctx.fillText("Pressione [ E ] para Avançar para a Próxima Onda", canvas.width / 2, 360);
+            return;
+        }
+
+        // --- CENÁRIO DE JOGO ---
+        // Chão com efeito neon
+        ctx.fillStyle = "#11111d";
+        ctx.fillRect(0, 388, canvas.width, 112);
         ctx.fillStyle = "#ff0055";
-        ctx.fillRect(0, 365, canvas.width, 3); // Linha neon de destaque no chão
+        ctx.fillRect(0, 385, canvas.width, 3);
 
         // Desenhar Partículas
         for (let pt of particles) {
@@ -303,56 +399,86 @@
             ctx.fillRect(pt.x, pt.y, 3, 3);
         }
 
-        // Desenhar Inimigos (Zumbis/Infectados estéticos em tons de roxo/verde tóxico)
-        for (let e of enemies) {
-            ctx.fillStyle = "#4a0e4e"; // Corpo
-            ctx.fillRect(e.x, e.y, e.width, e.height);
-            ctx.fillStyle = "#00ff66"; // Olhos brilhantes infectados
-            let eyeX = e.x + 8;
-            ctx.fillRect(eyeX, e.y + 10, 6, 4);
+        // Desenhar Textos Flutuantes (Dano)
+        for (let ft of floatingTexts) {
+            ctx.fillStyle = ft.color;
+            ctx.font = "bold 14px 'Courier New'";
+            ctx.fillText(ft.text, ft.x, ft.y);
         }
 
-        // Desenhar Jogador (Prisioneiro: capa marrom escura e cabeça de fogo verde neon)
+        // Desenhar Inimigos
+        for (let e of enemies) {
+            // Corpo
+            ctx.fillStyle = e.type === "brute" ? "#31053d" : "#4a0e4e";
+            ctx.fillRect(e.x, e.y, e.width, e.height);
+            
+            // Olhos brilhantes do infectado
+            ctx.fillStyle = e.type === "brute" ? "#ff2222" : "#00ff66";
+            let eyeX = e.x + (e.type === "brute" ? 12 : 8);
+            ctx.fillRect(eyeX, e.y + 10, e.type === "brute" ? 18 : 6, 4);
+
+            // Pequena barra de vida do inimigo
+            ctx.fillStyle = "#222";
+            ctx.fillRect(e.x, e.y - 8, e.width, 4);
+            ctx.fillStyle = "#ff0055";
+            ctx.fillRect(e.x, e.y - 8, (e.hp / e.maxHp) * e.width, 4);
+        }
+
+        // Desenhar Jogador (Prisioneiro com capa e cabeça de fogo neon)
+        // Se estiver rolando, fica translúcido
+        ctx.globalAlpha = player.isRolling ? 0.6 : 1.0;
+
         // Corpo e Capa
         ctx.fillStyle = "#2a1a12"; 
         ctx.fillRect(player.x, player.y + 12, player.width, player.height - 12);
         
-        // Cabeça com Fogo Verde Neon clássico do Dead Cells
+        // Cabeça com Fogo Verde Neon clássico
         ctx.fillStyle = "#00ffaa";
         ctx.fillRect(player.x + (player.facing === "right" ? 14 : 6), player.y, 14, 14);
-        // Efeito de labareda superior
         ctx.fillRect(player.x + (player.facing === "right" ? 18 : 10), player.y - 6, 6, 8);
 
-        // Desenhar Espada se estiver atacando (Efeito de corte estético arco/linha rápida)
+        ctx.globalAlpha = 1.0; // Resetar opacidade
+
+        // Desenhar Efeito de Ataque com Espada
         if (player.isAttacking) {
             ctx.strokeStyle = "#00ffff";
-            ctx.lineWidth = 4;
+            ctx.lineWidth = 5;
             ctx.beginPath();
-            let slashX = player.facing === "right" ? player.x + player.width : player.x - 20;
-            ctx.arc(slashX + 10, player.y + 24, 25, player.facing === "right" ? -Math.PI/2 : Math.PI/2, player.facing === "right" ? Math.PI/2 : 3*Math.PI/2);
+            let slashX = player.facing === "right" ? player.x + player.width : player.x - 25;
+            ctx.arc(slashX + 12, player.y + 24, 28, player.facing === "right" ? -Math.PI/2 : Math.PI/2, player.facing === "right" ? Math.PI/2 : 3*Math.PI/2);
             ctx.stroke();
         }
 
-        // Interface do Usuário (HUD estilo metroidvania/roguelike)
-        ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
-        ctx.fillRect(15, 15, 220, 60);
-        ctx.strokeStyle = "#333344";
-        ctx.strokeRect(15, 15, 220, 60);
+        // --- HUD (Interface Superior) ---
+        ctx.fillStyle = "rgba(10, 10, 18, 0.75)";
+        ctx.fillRect(15, 15, 260, 75);
+        ctx.strokeStyle = "#22223b";
+        ctx.strokeRect(15, 15, 260, 75);
 
-        // Barra de Vida
+        // Barra de Vida do Jogador
         ctx.fillStyle = "#331122";
-        ctx.fillRect(25, 25, 200, 16);
+        ctx.fillRect(25, 25, 240, 16);
         ctx.fillStyle = "#ff0055";
-        ctx.fillRect(25, 25, (player.hp / player.maxHp) * 200, 16);
+        ctx.fillRect(25, 25, Math.max(0, (player.hp / player.maxHp) * 240), 16);
         ctx.fillStyle = "#fff";
-        ctx.font = "10px Courier New";
+        ctx.font = "11px 'Courier New'";
         ctx.fillText("HP: " + Math.max(0, Math.floor(player.hp)) + "/" + player.maxHp, 30, 37);
 
-        // Texto de Pontuação e Onda
+        // Informações de Pontuação, Células e Onda
         ctx.fillStyle = "#fff";
-        ctx.font = "12px Courier New";
+        ctx.font = "12px 'Courier New'";
         ctx.fillText("Pontos: " + score, 25, 60);
-        ctx.fillText("Onda: " + wave, 150, 60);
+        ctx.fillText("🟢 Células: " + cells, 150, 60);
+        ctx.fillText("Onda: " + wave, 25, 80);
+
+        // Aviso se a onda acabou
+        if (enemies.length === 0) {
+            ctx.fillStyle = "#00ffaa";
+            ctx.font = "bold 16px 'Courier New'";
+            ctx.textAlign = "center";
+            ctx.fillText("Área Limpa! Pressione [ E ] para ir à Loja / Próxima Onda", canvas.width / 2, 45);
+            ctx.textAlign = "left"; // Resetar alinhamento
+        }
     }
 
     function loop() {
@@ -361,7 +487,6 @@
         requestAnimationFrame(loop);
     }
 
-    // Inicializa o primeiro loop gráfico (tela inicial)
     loop();
 </script>
 
