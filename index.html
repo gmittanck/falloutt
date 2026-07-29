@@ -2,43 +2,74 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>RPG Prototype</title>
+    <title>RPG Exiled Kingdoms Style - Protótipo</title>
     <style>
         body { background: #111; color: #fff; text-align: center; font-family: sans-serif; }
-        canvas { background: #222; border: 2px solid #555; margin-top: 10px; }
+        canvas { background: #222; border: 2px solid #555; margin-top: 10px; display: block; margin-left: auto; margin-right: auto; }
+        #ui { font-size: 18px; margin-bottom: 5px; }
     </style>
 </head>
 <body>
-    <h2>Protótipo de RPG 2D</h2>
-    <p>Use as teclas W, A, S, D ou as setas do teclado para mover o personagem.</p>
+    <h2>Protótipo RPG - Inspirado em Exiled Kingdoms</h2>
+    <div id="ui">HP: <span id="playerHp">100</span> | Ouro: <span id="gold">0</span> | Inimigo HP: <span id="enemyHp">30</span></div>
+    <p>Use <b>W, A, S, D</b> para mover. Pressione a tecla <b>Espaço</b> para atacar o monstro quando estiver perto.</p>
     <canvas id="gameCanvas" width="600" height="400"></canvas>
     <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
 
-        let player = { x: 300, y: 200, size: 20, color: "gold", speed: 4 };
+        let player = { x: 100, y: 200, size: 20, color: "gold", speed: 3, hp: 100, gold: 0 };
+        let enemy = { x: 400, y: 200, size: 25, color: "crimson", hp: 30, alive: true };
         let keys = {};
 
-        window.addEventListener("keydown", (e) => keys[e.key] = true);
-        window.addEventListener("keyup", (e) => keys[e.key] = false);
+        window.addEventListener("keydown", (e) => {
+            keys[e.key.toLowerCase()] = true;
+            if (e.key === " ") {
+                attackEnemy();
+            }
+        });
+        window.addEventListener("keyup", (e) => keys[e.key.toLowerCase()] = false);
+
+        function attackEnemy() {
+            if (!enemy.alive) return;
+            let dist = Math.hypot(player.x - enemy.x, player.y - enemy.y);
+            if (dist < 45) {
+                enemy.hp -= 10;
+                if (enemy.hp <= 0) {
+                    enemy.alive = false;
+                    player.gold += 15;
+                }
+            }
+        }
 
         function update() {
-            if (keys["ArrowUp"] || keys["w"] || keys["W"]) player.y -= player.speed;
-            if (keys["ArrowDown"] || keys["s"] || keys["S"]) player.y += player.speed;
-            if (keys["ArrowLeft"] || keys["a"] || keys["A"]) player.x -= player.speed;
-            if (keys["ArrowRight"] || keys["d"] || keys["D"]) player.x += player.speed;
+            if (keys["w"] || keys["arrowup"]) player.y -= player.speed;
+            if (keys["s"] || keys["arrowdown"]) player.y += player.speed;
+            if (keys["a"] || keys["arrowleft"]) player.x -= player.speed;
+            if (keys["d"] || keys["arrowright"]) player.x += player.speed;
             
             // Limites da tela
-            if (player.x < 10) player.x = 10;
-            if (player.x > canvas.width - 10) player.x = canvas.width - 10;
-            if (player.y < 10) player.y = 10;
-            if (player.y > canvas.height - 10) player.y = canvas.height - 10;
+            player.x = Math.max(10, Math.min(canvas.width - 10, player.x));
+            player.y = Math.max(10, Math.min(canvas.height - 10, player.y));
+
+            // Atualizar interface na tela
+            document.getElementById("playerHp").innerText = player.hp;
+            document.getElementById("gold").innerText = player.gold;
+            document.getElementById("enemyHp").innerText = enemy.alive ? enemy.hp : "Derrotado";
         }
 
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Desenhar Jogador
             ctx.fillStyle = player.color;
             ctx.fillRect(player.x - player.size/2, player.y - player.size/2, player.size, player.size);
+
+            // Desenhar Inimigo (se vivo)
+            if (enemy.alive) {
+                ctx.fillStyle = enemy.color;
+                ctx.fillRect(enemy.x - enemy.size/2, enemy.y - enemy.size/2, enemy.size, enemy.size);
+            }
         }
 
         function loop() {
