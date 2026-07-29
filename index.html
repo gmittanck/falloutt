@@ -1,217 +1,53 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<title>Mini Dead Cells</title>
-
-<style>
-body{
-    margin:0;
-    overflow:hidden;
-    background:#111;
-    font-family:Arial;
-}
-
-canvas{
-    background:#222;
-    display:block;
-    margin:auto;
-    border:4px solid #555;
-}
-
-#ui{
-    position:absolute;
-    top:10px;
-    left:10px;
-    color:white;
-    font-size:22px;
-}
-</style>
-
+    <meta charset="UTF-8">
+    <title>RPG Prototype</title>
+    <style>
+        body { background: #111; color: #fff; text-align: center; font-family: sans-serif; }
+        canvas { background: #222; border: 2px solid #555; margin-top: 10px; }
+    </style>
 </head>
 <body>
+    <h2>Protótipo de RPG 2D</h2>
+    <p>Use as teclas W, A, S, D ou as setas do teclado para mover o personagem.</p>
+    <canvas id="gameCanvas" width="600" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
 
-<div id="ui"></div>
+        let player = { x: 300, y: 200, size: 20, color: "gold", speed: 4 };
+        let keys = {};
 
-<canvas id="game" width="1000" height="550"></canvas>
+        window.addEventListener("keydown", (e) => keys[e.key] = true);
+        window.addEventListener("keyup", (e) => keys[e.key] = false);
 
-<script>
+        function update() {
+            if (keys["ArrowUp"] || keys["w"] || keys["W"]) player.y -= player.speed;
+            if (keys["ArrowDown"] || keys["s"] || keys["S"]) player.y += player.speed;
+            if (keys["ArrowLeft"] || keys["a"] || keys["A"]) player.x -= player.speed;
+            if (keys["ArrowRight"] || keys["d"] || keys["D"]) player.x += player.speed;
+            
+            // Limites da tela
+            if (player.x < 10) player.x = 10;
+            if (player.x > canvas.width - 10) player.x = canvas.width - 10;
+            if (player.y < 10) player.y = 10;
+            if (player.y > canvas.height - 10) player.y = canvas.height - 10;
+        }
 
-const canvas=document.getElementById("game");
-const ctx=canvas.getContext("2d");
-const ui=document.getElementById("ui");
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x - player.size/2, player.y - player.size/2, player.size, player.size);
+        }
 
-const gravity=0.7;
+        function loop() {
+            update();
+            draw();
+            requestAnimationFrame(loop);
+        }
 
-let keys={};
-
-document.addEventListener("keydown",e=>{
-keys[e.key.toLowerCase()]=true;
-
-if(e.code=="Space")
-player.attack=true;
-});
-
-document.addEventListener("keyup",e=>{
-keys[e.key.toLowerCase()]=false;
-
-if(e.code=="Space")
-player.attack=false;
-});
-
-const player={
-x:100,
-y:300,
-w:45,
-h:70,
-vx:0,
-vy:0,
-speed:5,
-jump:15,
-life:100,
-ground:false,
-attack:false
-};
-
-const enemy={
-x:700,
-y:300,
-w:50,
-h:70,
-life:50,
-speed:1.2,
-alive:true
-};
-
-function rect(a,b){
-
-return(
-a.x<b.x+b.w &&
-a.x+a.w>b.x &&
-a.y<b.y+b.h &&
-a.y+a.h>b.y
-);
-
-}
-
-function update(){
-
-player.vx=0;
-
-if(keys["a"])
-player.vx=-player.speed;
-
-if(keys["d"])
-player.vx=player.speed;
-
-if(keys["w"] && player.ground){
-
-player.vy=-player.jump;
-player.ground=false;
-
-}
-
-player.vy+=gravity;
-
-player.x+=player.vx;
-player.y+=player.vy;
-
-if(player.y>420){
-
-player.y=420;
-player.vy=0;
-player.ground=true;
-
-}
-
-if(enemy.alive){
-
-if(enemy.x>player.x)
-enemy.x-=enemy.speed;
-
-if(enemy.x<player.x)
-enemy.x+=enemy.speed;
-
-if(rect(player,enemy)){
-
-player.life-=0.2;
-
-}
-
-if(player.attack){
-
-let sword={
-x:player.x+player.w,
-y:player.y+15,
-w:40,
-h:40
-};
-
-if(rect(sword,enemy)){
-
-enemy.life-=1;
-
-}
-
-}
-
-if(enemy.life<=0)
-enemy.alive=false;
-
-}
-
-}
-
-function draw(){
-
-ctx.clearRect(0,0,canvas.width,canvas.height);
-
-// chão
-ctx.fillStyle="#3b7d3b";
-ctx.fillRect(0,490,1000,60);
-
-// jogador
-ctx.fillStyle="#2fa8ff";
-ctx.fillRect(player.x,player.y,player.w,player.h);
-
-// espada
-if(player.attack){
-
-ctx.fillStyle="yellow";
-ctx.fillRect(player.x+player.w,
-player.y+20,
-40,
-20);
-
-}
-
-// inimigo
-
-if(enemy.alive){
-
-ctx.fillStyle="crimson";
-ctx.fillRect(enemy.x,enemy.y,enemy.w,enemy.h);
-
-}
-
-ui.innerHTML=
-"Vida: "+Math.floor(player.life)+
-"<br>Inimigo: "+enemy.life;
-
-}
-
-function loop(){
-
-update();
-draw();
-
-requestAnimationFrame(loop);
-
-}
-
-loop();
-
-</script>
-
+        loop();
+    </script>
 </body>
 </html>
